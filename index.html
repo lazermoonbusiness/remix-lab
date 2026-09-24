@@ -1,0 +1,997 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Remix Lab: an interactive lesson on standing out on YouTube. Remix titles, mix channel styles, and turn a copied thumbnail into your own.">
+<title>Remix Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,800;62..125,900&family=Inter:wght@400;500;600;700;800&family=Roboto+Condensed:wght@400;500&display=swap">
+<style>
+html,body{margin:0}[hidden]{display:none!important}img{max-width:100%}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+/* Deliberately single-theme: a faithful, interactive copy of three white infographics. */
+:root{
+  color-scheme:light;
+  --ink:#0B0B0C; --ink-2:#444; --ink-3:#6B6B6B; --line:#E3E3E3; --soft:#F7F7F8;
+  --blue:#1E6FE0; --blue-bg:#E3EEFD; --blue-ink:#0A4FB8;
+  --green:#22A447; --green-bg:#DDF5DF; --green-ink:#0B5A1A;
+  --red:#E3261E;
+  --inter:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --heavy:"Archivo","Arial Black",Impact,sans-serif;
+  --cond:"Roboto Condensed","Arial Narrow",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{background:#FFFFFF;color:var(--ink)}
+body{font:16px/1.5 var(--inter);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0;padding:0}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px;border-radius:8px}
+.page{max-width:1720px;margin:0 auto;padding-inline:16px;padding-block:14px 48px}
+
+/* mode switcher */
+.modes{display:flex;justify-content:center;flex-wrap:wrap;gap:6px;padding:6px;margin:0 auto 14px;width:max-content;max-width:100%;background:var(--soft);border:1px solid var(--line);border-radius:999px}
+.modes button{transition:background .2s,color .2s,box-shadow .2s;padding:9px 16px;border-radius:999px;font-weight:600;font-size:14px;color:var(--ink-2);display:inline-flex;gap:8px;align-items:center}
+.modes button i{width:9px;height:9px;border-radius:50%}
+.modes button[aria-selected="true"]{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+
+/* scaled stage (keeps each infographic's exact layout) */
+.viewport{width:100%;overflow-x:auto;overflow-y:hidden}
+.sizer{position:relative;margin:0 auto}
+.stage{position:absolute;left:0;top:0;transform-origin:0 0;background:#fff}
+.abs{position:absolute}
+.card{position:absolute;background:#fff;border:1px solid #ECECEC;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.09),0 1px 3px rgba(0,0,0,.05)}
+
+/* ===== MODE 1 ===== */
+.m1-kicker{top:48px;left:0;width:1672px;text-align:center;font:500 25px/1 var(--inter);letter-spacing:.42em;color:#4A4A4A}
+.tline{display:flex;align-items:center;justify-content:center;white-space:nowrap;font-weight:800;letter-spacing:-.035em;color:var(--ink)}
+.tline .w{padding:0 .1em}
+.tchip{padding:.06em .2em .1em;border-radius:.2em;margin:0 .06em;transition:transform .15s}
+button.tchip:hover{transform:translateY(-2px)}
+.tchip.a{background:var(--blue-bg);color:var(--blue-ink)}
+.tchip.s{background:var(--green-bg);color:var(--green-ink)}
+.tbox{margin-left:.3em;font:400 .5em/1 var(--inter);letter-spacing:0;color:#555;border:2px solid #D2D2D2;border-radius:16px;padding:.45em .55em;box-shadow:0 2px 6px rgba(0,0,0,.05)}
+.tbox.has{color:#555;background:#F1F1F2;border-color:#E6E6E6}
+.remix .tbox{border-color:#EDEDED;background:#F3F3F4;font:500 1em/1 var(--cond);letter-spacing:-.01em;padding:.06em .2em .1em;border-radius:.2em;color:#5A5A5A;box-shadow:none}
+.panel{position:absolute;top:270px;width:318px;height:398px;background:#fff;border:1px solid #E4E4E4;border-radius:18px;box-shadow:0 8px 26px rgba(0,0,0,.07)}
+.panel h3{position:absolute;left:28px;top:26px;margin:0;font:500 17px/1 var(--inter);letter-spacing:.13em;color:#555}
+.chev{position:absolute;width:36px;height:36px;display:grid;place-items:center;border-radius:10px;color:#555}
+.chev:hover{background:#F2F2F2}
+.chev svg{width:22px;height:22px}
+.chev.up{right:18px;top:16px}
+.chev.down{right:18px;bottom:14px}
+.list{position:absolute;left:14px;top:62px;width:290px;height:282px;overflow-y:auto;background:linear-gradient(#FBFBFB,#F7F7F7);border-radius:12px;padding:6px 10px 6px 4px;scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:#C9C9C9 transparent}
+.list::-webkit-scrollbar{width:7px}.list::-webkit-scrollbar-thumb{background:#CACACA;border-radius:7px}
+.opt{display:block;width:100%;text-align:left;height:58px;padding:0 16px;margin:1px 0;border-radius:12px;font:400 28px/58px var(--inter);color:#3A3A3A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.opt{transition:background .22s ease,color .22s ease}
+.opt:hover{background:#EFEFF1}
+.opt:active{transform:scale(.985)}
+.panel.p-a .opt.on{background:var(--blue-bg);color:var(--blue-ink);font-weight:700}
+.panel.p-s .opt.on{background:var(--green-bg);color:var(--green-ink);font-weight:700}
+.panel.p-e .opt{font:400 30px/58px var(--cond);color:#3A3A3A}
+.panel.p-e .opt.on{background:#ECECEE;color:#3A3A3A;font-weight:500}
+.opt.add{font:500 18px/58px var(--inter)!important;color:#777!important}
+.opt-input{width:100%;height:50px;margin:4px 0;border:2px solid #CFCFCF;border-radius:12px;padding:0 14px;font:500 22px var(--inter);color:#222;background:#fff}
+.m1-rule{top:728px;height:1px;background:#CFCFCF}
+.m1-label{top:716px;left:686px;width:300px;text-align:center;font:500 20px/24px var(--inter);letter-spacing:.38em;color:#4A4A4A}
+.reroll{top:712px;left:992px;height:32px;padding:0 12px;border-radius:999px;border:1px solid #DADADA;font:600 13px var(--inter);color:#555;display:flex;align-items:center;gap:6px;background:#fff}
+.reroll:hover{border-color:#999}
+.remix{top:768px;left:0;width:1672px;height:86px;cursor:pointer}
+.remix:hover .tchip{filter:brightness(.97)}
+.m1-cap{top:875px;left:0;width:1672px;text-align:center;font:400 24px/1 var(--inter);color:#555;letter-spacing:.01em}
+.pulse{animation:pulse .9s ease}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(30,111,224,.45)}100%{box-shadow:0 0 0 18px rgba(30,111,224,0)}}
+
+/* brief (output) under mode 1 */
+.below{max-width:1200px;margin:22px auto 0;display:grid;gap:14px}
+.brief{border:1px solid #E6E6E6;border-radius:20px;padding:clamp(18px,3vw,30px);display:grid;gap:18px;box-shadow:0 8px 26px rgba(0,0,0,.06)}
+.brief-top{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+.kick{font:500 13px/1 var(--inter);letter-spacing:.3em;text-transform:uppercase;color:#555}
+.pill{font:600 13px/1 var(--inter);padding:8px 12px;border-radius:999px;background:#F1F1F2;color:#444}
+.brief h2{margin:0;font:800 clamp(24px,3vw,36px)/1.1 var(--inter);letter-spacing:-.03em}
+.brief-head{display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:26px;align-items:start}
+.brief-headtext{display:grid;gap:14px}
+.ytt{position:relative;margin:0;aspect-ratio:16/9;max-width:100%;border-radius:14px;overflow:hidden;background:#F3F3F4;box-shadow:0 6px 18px rgba(0,0,0,.10)}
+.ytt img{display:block;width:100%;height:100%;object-fit:cover}
+.thumb-empty{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:6px;padding:12px;text-align:center;border:2px dashed #D4D4D7;border-radius:14px;color:#777;font-size:14px}
+.thumb-empty b{color:#333;font-size:15px}
+.thumb-empty code{font:600 13px ui-monospace,Consolas,monospace;color:#333;background:#fff;border:1px solid #E3E3E3;padding:3px 8px;border-radius:6px}
+.yt-time{position:absolute;right:8px;bottom:8px;background:rgba(0,0,0,.82);color:#fff;font:600 13px/1.3 var(--inter);padding:2px 7px;border-radius:5px;font-variant-numeric:tabular-nums}
+.fact{font-size:18px;color:#222;max-width:70ch}
+.meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 28px;margin:0}
+.meta dt,.beat b,.thumbidea b{display:block;font:600 12px/1.2 var(--inter);letter-spacing:.16em;text-transform:uppercase;color:#777;margin-bottom:5px}
+.meta dd{margin:0;color:#333}
+.beats{list-style:none;margin:0;padding:0;border-top:1px solid #EBEBEB}
+.beat{display:grid;grid-template-columns:130px 1fr;gap:16px;padding:13px 0;border-bottom:1px solid #EBEBEB}
+.beat b{margin-top:3px}
+.thumbidea{background:#F6F6F7;border-radius:14px;padding:14px 16px}
+.delta{font-size:15px;color:#444;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.delta .sw{font:600 13px var(--inter);border:1px solid #DDD;border-radius:8px;padding:3px 9px}
+.delta s{color:#999}
+.fresh{animation:fresh 1.2s ease}
+@keyframes fresh{0%{background:#FFF4CC;box-shadow:0 0 0 4px #FFF4CC;opacity:.35}25%{opacity:1}100%{background:transparent;box-shadow:0 0 0 4px transparent}}
+/* shared motion */
+.enter{animation:enter .38s cubic-bezier(.2,.8,.2,1)}
+@keyframes enter{from{opacity:0;transform:translateY(10px)}}
+.swap{animation:swap .34s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes swap{from{opacity:.2;transform:translateY(8px) scale(.94)}}
+.rise{animation:rise .4s cubic-bezier(.2,.8,.2,1)}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}}
+.refresh{animation:refresh .5s ease}
+@keyframes refresh{0%{opacity:.35;transform:scale(.985)}100%{opacity:1;transform:none}}
+.pop{animation:pop .38s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{0%{transform:scale(.55)}100%{transform:scale(1)}}
+#connectors path{animation:linein .35s ease}
+@keyframes linein{from{opacity:0}}
+#b-img{transition:opacity .22s ease}
+#b-img.out{opacity:0}
+
+/* ===== MODE 2 ===== */
+.m2-title{top:22px;left:0;width:1672px;text-align:center;font:900 82px/1 var(--heavy);font-stretch:82%;letter-spacing:-.01em;color:#0B0B0C;text-shadow:0 3px 0 rgba(0,0,0,.18)}
+.clabel{position:absolute;font:800 23px/1 var(--inter);letter-spacing:.07em;color:#141414}
+.cnav{position:absolute;right:14px;top:10px;display:flex;align-items:center;gap:6px}
+.cnav button{width:30px;height:30px;border-radius:50%;border:1px solid #DDD;display:grid;place-items:center;color:#444;background:#fff}
+.cnav button:hover{border-color:#999}
+.cnav small{font:600 12px var(--inter);color:#888;min-width:30px;text-align:center}
+.cname{position:absolute;font:600 13px var(--inter);color:#888}
+.verd{transition:background .3s,color .3s}
+.avatar{position:absolute;border-radius:50%;border:5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.18);display:grid;place-items:center;color:#fff}
+.avatar svg{width:56%;height:56%}
+.gl{position:absolute;background:#D9D9DB;border-radius:6px}
+.tiles-cv{position:absolute;cursor:pointer;border-radius:8px}
+.banner-cv{position:absolute;border-radius:10px}
+.paint-cv{position:absolute;cursor:crosshair;touch-action:none}
+.selring{position:absolute;border:3px solid #111;border-radius:8px;pointer-events:none;box-shadow:0 0 0 2px #fff;transition:left .22s cubic-bezier(.2,.8,.2,1),top .22s cubic-bezier(.2,.8,.2,1)}
+.hovring{position:absolute;border:2px dashed rgba(0,0,0,.45);border-radius:8px;pointer-events:none;transition:left .12s ease,top .12s ease}
+.fadein{animation:enter .35s ease}
+/* channel dial */
+.dial{position:absolute;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;scrollbar-width:none;outline:none;
+  -webkit-mask-image:linear-gradient(transparent 0,#000 20%,#000 80%,transparent 100%);mask-image:linear-gradient(transparent 0,#000 20%,#000 80%,transparent 100%)}
+.dial::-webkit-scrollbar{display:none}
+.dial-track{display:grid;gap:22px;padding:195px 16px}
+.dcard{position:relative!important;height:330px;scroll-snap-align:center;cursor:pointer;will-change:transform,filter,opacity}
+.dcard.active{cursor:default;box-shadow:0 14px 34px rgba(0,0,0,.14),0 0 0 2px #111}
+.dcard .tiles-cv{cursor:pointer}
+.dcard:not(.active) .tiles-cv{pointer-events:none}
+.dial-btn{position:absolute;z-index:4;width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid #D6D6D8;box-shadow:0 4px 12px rgba(0,0,0,.12);display:grid;place-items:center;color:#222;transition:transform .15s,box-shadow .15s}
+.dial-btn:hover{transform:scale(1.08);box-shadow:0 6px 16px rgba(0,0,0,.16)}
+.dial-btn:disabled{opacity:.35;cursor:default;transform:none}
+.dial-btn svg{width:22px;height:22px}
+.dial-hint{position:absolute;text-align:center;font:600 16px var(--inter);color:#444;font-variant-numeric:tabular-nums}
+.dial-hint i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:8px;vertical-align:-1px;transition:background .3s}
+.cfam{position:absolute;right:20px;top:18px;font:600 15px/1 var(--inter);color:#777}
+/* smooth color shifts */
+#stage2 svg path,#stage2 svg rect,#stage2 svg circle,#stage2 svg ellipse{transition:fill .45s ease,stroke .45s ease}
+#idAvatar{transition:background .45s ease}
+#idCard{transition:border-color .3s,box-shadow .3s}
+#idCard.copy{border-color:#E3261E;box-shadow:0 0 0 3px rgba(227,38,30,.25),0 10px 30px rgba(0,0,0,.09)}
+.idbadge{position:absolute;right:20px;top:20px;font:800 13px/1 var(--inter);letter-spacing:.08em;padding:8px 11px;border-radius:999px;transition:background .3s,color .3s}
+.idbadge.good{background:#E3F5E8;color:#12692C}.idbadge.bad{background:#E3261E;color:#fff}.idbadge.neutral{background:#F0F0F2;color:#666}
+.m2-cap{top:866px;left:0;width:1672px;text-align:center;font:400 30px/1 var(--inter);color:#2A2A2A}
+.eqlbl{position:absolute;width:200px;text-align:center;font:500 27px/1 var(--inter);color:#1A1A1A}
+.eqop{position:absolute;font:300 64px/1 var(--inter);color:#5A5A5A}
+.tools{position:absolute;display:flex;gap:6px}
+.tools button,.tools label{height:30px;padding:0 10px;border-radius:8px;border:1px solid #DDD;background:#fff;font:600 12px var(--inter);color:#444;display:flex;align-items:center;gap:6px}
+.tools button:hover{border-color:#999}
+.tools input{width:70px;accent-color:#111}
+.readout{max-width:1200px;margin:20px auto 0;display:grid;grid-template-columns:auto 1fr;gap:10px 28px;align-items:start;border:1px solid #E6E6E6;border-radius:18px;padding:18px 22px}
+.readout h4{margin:0;font:800 20px/1.2 var(--inter);letter-spacing:-.01em}
+.readout p{margin:4px 0 0;color:#444;font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips span{display:inline-flex;align-items:center;gap:6px;font:500 13px var(--inter);border:1px solid #E3E3E3;border-radius:999px;padding:4px 10px 4px 5px;font-variant-numeric:tabular-nums}
+.chips i{width:16px;height:16px;border-radius:50%}
+.verd{grid-column:1/-1;font-weight:600;padding:10px 14px;border-radius:12px}
+.verd.good{background:#E6F6EA;color:#0B5A1A}.verd.bad{background:#FDE7E5;color:#A3160F}.verd.neutral{background:#F4F4F5;color:#333}
+
+/* ===== MODE 3 ===== */
+.m3-title{top:14px;left:0;width:1536px;text-align:center;font:900 80px/1 var(--heavy);font-stretch:92%;letter-spacing:-.015em;color:#0B0B0C}
+.m3-sub{top:96px;left:0;width:1536px;text-align:center;font:900 42px/1 var(--heavy);font-stretch:92%;color:#0B0B0C;display:flex;justify-content:center;align-items:center;gap:14px}
+.m3-sub svg{width:40px;height:40px}
+.tlabel{position:absolute;font:800 20px/1 var(--inter);letter-spacing:.07em;color:#111}
+.thumb{position:absolute;width:640px;height:360px;border-radius:14px;overflow:hidden;box-shadow:0 10px 26px rgba(0,0,0,.13);background:#F3F3F4}
+.thumb img{display:block;width:100%;height:100%;object-fit:cover}
+.pairs{position:absolute;width:640px;display:grid;gap:10px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:center;text-align:left;padding:5px 10px;margin-left:-10px;border-radius:10px;transition:background .15s}
+.pair:hover{background:#F2F2F3}
+.pair span{display:flex;align-items:center;gap:12px;font:400 20px/1.2 var(--inter);color:#2A2A2A;white-space:nowrap}
+.pair svg{width:22px;height:22px;flex:none}
+.thumb svg{display:block;width:100%;height:100%}
+.arrow{position:absolute;width:56px;height:24px}
+.checks{position:absolute;width:520px;display:grid;grid-template-columns:250px 270px;grid-auto-rows:27px}
+.chk{display:flex;align-items:center;gap:14px;text-align:left;font:400 20px/1 var(--inter);color:#2A2A2A;border-radius:6px;padding:0 4px;margin-left:-4px;white-space:nowrap}
+.chk:hover{background:#F2F2F3}
+.chk svg{width:22px;height:22px;flex:none}
+.m3-verdict{position:absolute;width:520px;text-align:center;font:800 26px/1.1 var(--inter);color:#111;transition:color .25s}
+.tlabel{transition:color .25s}
+.thumb .lay{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .38s ease}
+.thumb .lay.on{opacity:1}
+.thumb .lay.top{z-index:2}
+.pair{display:grid;grid-template-columns:42px minmax(0,1fr) 54px;gap:14px;align-items:center;width:640px;height:62px;padding:0 14px;border-radius:14px;border:2px solid;text-align:left;cursor:pointer;transition:background .25s,border-color .25s,transform .12s,box-shadow .2s}
+.pair:hover{box-shadow:0 4px 14px rgba(0,0,0,.08)}
+.pair:active{transform:scale(.985)}
+.pair[aria-pressed="false"]{background:#FDEEEC;border-color:#F3C2BC}
+.pair[aria-pressed="true"]{background:#E8F6ED;border-color:#B6E0C3}
+.pi{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;transition:background .25s}
+.pair[aria-pressed="false"] .pi{background:#E3261E}
+.pair[aria-pressed="true"] .pi{background:#22A447}
+.pi svg{width:22px;height:22px}
+.pt small{display:block;font:700 11px/1 var(--inter);letter-spacing:.14em;color:#6F6F6F;margin-bottom:6px}
+.pt b{display:block;font:600 18px/1.2 var(--inter);color:#1E1E1E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pt b em{font-style:normal;color:#9A9A9A;margin:0 .45em}
+.tsw{position:relative;width:52px;height:30px;border-radius:30px;background:#CFCFD3;transition:background .25s}
+.tsw i{position:absolute;left:3px;top:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .28s cubic-bezier(.3,1.4,.5,1)}
+.pair[aria-pressed="true"] .tsw{background:#22A447}
+.pair[aria-pressed="true"] .tsw i{transform:translateX(22px)}
+.meter3{position:absolute;width:640px;display:flex;align-items:center;gap:8px}
+.meter3 i{flex:1;height:9px;border-radius:9px;background:#E6E6E8;transition:background .3s}
+.meter3 span{margin-left:8px;font:600 15px var(--inter);color:#555;white-space:nowrap;font-variant-numeric:tabular-nums}
+.m3-hint{top:992px;left:0;width:1536px;text-align:center;font:500 15px var(--inter);color:#888}
+@media (max-width:700px){
+  .meta{grid-template-columns:1fr}
+  .brief-head{grid-template-columns:1fr}
+  .beat{grid-template-columns:1fr;gap:3px}
+  .readout{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="modes" role="tablist" aria-label="Infographic">
+    <button type="button" role="tab" id="tab-1" data-mode="1" aria-selected="true"><i style="background:#1E6FE0"></i>One Title. Many Directions.</button>
+    <button type="button" role="tab" id="tab-2" data-mode="2" aria-selected="false"><i style="background:#F4B400"></i>Mix Inspiration</button>
+    <button type="button" role="tab" id="tab-3" data-mode="3" aria-selected="false"><i style="background:#22A447"></i>Be Inspired. Be Original.</button>
+  </div>
+
+  <!-- ================= MODE 1 ================= -->
+  <section id="mode-1" data-w="1672" data-h="940" role="tabpanel" aria-labelledby="tab-1">
+    <div class="viewport"><div class="sizer"><div class="stage" style="width:1672px;height:940px">
+      <div class="abs m1-kicker">ONE TITLE. MANY DIRECTIONS.</div>
+      <div class="abs" id="topTitle" style="top:128px;left:0;width:1672px;height:96px;display:flex;justify-content:center;align-items:center">
+        <div class="tline" id="topLine" style="font-size:72px">
+          <span class="w">The</span>
+          <button type="button" class="tchip a" id="topA" data-panel="p-a">Physics</button>
+          <span class="w">Hidden Inside <span id="topArt">a</span></span>
+          <button type="button" class="tchip s" id="topS" data-panel="p-s">Bowling Pin</button>
+          <button type="button" class="tbox" id="topE" data-panel="p-e">[ + Add ending ]</button>
+        </div>
+      </div>
+      <svg class="abs" id="connectors" width="1672" height="280" style="top:0;left:0;pointer-events:none" aria-hidden="true"></svg>
+
+      <div class="panel p-a" id="p-a" style="left:180px">
+        <h3>ANGLE / CONCEPT</h3>
+        <button type="button" class="chev up" data-dir="-1" aria-label="Scroll angles up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 15l7-7 7 7"/></svg></button>
+        <div class="list" role="listbox" aria-label="Angle / concept"></div>
+        <button type="button" class="chev down" data-dir="1" aria-label="Scroll angles down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l7 7 7-7"/></svg></button>
+      </div>
+      <div class="panel p-s" id="p-s" style="left:893px">
+        <h3>SUBJECT / OBJECT</h3>
+        <button type="button" class="chev up" data-dir="-1" aria-label="Scroll subjects up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 15l7-7 7 7"/></svg></button>
+        <div class="list" role="listbox" aria-label="Subject / object"></div>
+        <button type="button" class="chev down" data-dir="1" aria-label="Scroll subjects down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l7 7 7-7"/></svg></button>
+      </div>
+      <div class="panel p-e" id="p-e" style="left:1309px">
+        <h3>OPTIONAL BRACKET</h3>
+        <button type="button" class="chev up" data-dir="-1" aria-label="Scroll endings up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 15l7-7 7 7"/></svg></button>
+        <div class="list" role="listbox" aria-label="Optional bracket"></div>
+        <button type="button" class="chev down" data-dir="1" aria-label="Scroll endings down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l7 7 7-7"/></svg></button>
+      </div>
+
+      <div class="abs m1-rule" style="left:58px;width:628px"></div>
+      <div class="abs m1-rule" style="left:1110px;width:506px"></div>
+      <div class="abs m1-label">REMIXED EXAMPLE</div>
+      <button type="button" class="abs reroll" id="reroll" title="Show another remix">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg>Another
+      </button>
+      <div class="abs remix" id="remix" role="button" tabindex="0" title="Use this remix" style="display:flex;justify-content:center;align-items:center">
+        <div class="tline" id="remixLine" style="font-size:58px"></div>
+      </div>
+      <div class="abs m1-cap">Change the angle. Change the subject. Add your own promise.</div>
+    </div></div></div>
+
+    <div class="below">
+      <p class="delta" id="delta" aria-live="polite"></p>
+      <article class="brief" aria-label="Video brief">
+        <div class="brief-head">
+          <figure class="ytt" id="b-thumbwrap">
+            <img id="b-img" alt="" hidden>
+            <div class="thumb-empty" id="b-empty"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 16l5-5 4 4 3-3 6 6"/><circle cx="16" cy="9.5" r="1.6"/></svg><b>Thumbnail coming soon</b><code id="b-file"></code></div>
+            <span class="yt-time" id="b-time"></span>
+          </figure>
+          <div class="brief-headtext">
+            <div class="brief-top"><span class="kick">Video brief</span><span class="pill" id="b-run"></span></div>
+            <h2 id="b-title"></h2>
+            <p class="fact" id="b-fact"></p>
+          </div>
+        </div>
+        <dl class="meta">
+          <div><dt>The question</dt><dd id="b-q"></dd></div>
+          <div><dt>Made for</dt><dd id="b-aud"></dd></div>
+          <div><dt>Look &amp; feel</dt><dd id="b-look"></dd></div>
+          <div><dt>The promise</dt><dd id="b-prom"></dd></div>
+        </dl>
+        <ol class="beats">
+          <li class="beat"><b>Cold open</b><p id="b-b0" style="margin:0"></p></li>
+          <li class="beat"><b>Middle</b><p id="b-b1" style="margin:0"></p></li>
+          <li class="beat"><b>Payoff</b><p id="b-b2" style="margin:0"></p></li>
+        </ol>
+        <div class="thumbidea"><b>Thumbnail idea</b><p id="b-thumb" style="margin:0"></p></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ================= MODE 2 ================= -->
+  <section id="mode-2" data-w="1672" data-h="940" role="tabpanel" aria-labelledby="tab-2" hidden>
+    <div class="viewport"><div class="sizer"><div class="stage" id="stage2" style="width:1672px;height:940px">
+      <div class="abs m2-title">MIX INSPIRATION. CREATE YOUR OWN.</div>
+
+      <!-- Channel dial (scroll to pick a channel) -->
+      <div class="dial" id="dial" tabindex="0" role="listbox" aria-label="Channels. Scroll to pick one." style="left:32px;top:108px;width:456px;height:726px"><div class="dial-track" id="dialTrack"></div></div>
+      <button type="button" class="dial-btn" id="dialUp" style="left:238px;top:104px" aria-label="Previous channel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg></button>
+      <button type="button" class="dial-btn" id="dialDown" style="left:238px;top:792px" aria-label="Next channel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="dial-hint" id="dialHint" style="left:48px;top:846px;width:424px"></div>
+
+      <!-- Your creative palette (paintable) -->
+      <div class="card" style="left:607px;top:222px;width:446px;height:388px">
+        <div class="clabel" style="left:20px;top:20px">YOUR CREATIVE PALETTE</div>
+        <canvas class="paint-cv" id="paintCv" style="left:15px;top:50px;width:416px;height:322px" aria-label="Your creative palette. Drag to paint."></canvas>
+        <div class="avatar" style="left:26px;top:100px;width:74px;height:74px;background:#8A8F98;pointer-events:none"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8.5" r="4.4"/><path d="M3.5 21.5c.9-4.6 4.4-7 8.5-7s7.6 2.4 8.5 7z"/></svg></div>
+        <div class="gl" style="left:118px;top:136px;width:112px;height:10px;pointer-events:none"></div>
+        <div class="gl" style="left:118px;top:153px;width:84px;height:8px;pointer-events:none"></div>
+        <div class="gl" style="left:378px;top:142px;width:55px;height:16px;border-radius:8px;pointer-events:none"></div>
+      </div>
+      <div class="tools" style="left:607px;top:622px">
+        <label for="bsize">Brush <input type="range" id="bsize" min="6" max="48" value="22"></label>
+        <button type="button" id="undo">Undo</button>
+        <button type="button" id="clear">Clear</button>
+      </div>
+
+      <!-- Your own identity (output) -->
+      <div class="card" id="idCard" style="left:1162px;top:200px;width:470px;height:460px">
+        <div class="clabel" style="left:25px;top:24px;font-size:25px">YOUR OWN IDENTITY</div>
+        <div class="idbadge neutral" id="idBadge"></div>
+        <svg class="abs" id="idBanner" style="left:18px;top:62px;width:435px;height:84px;border-radius:10px" viewBox="0 0 435 84" preserveAspectRatio="none" aria-hidden="true"></svg>
+        <div class="avatar" id="idAvatar" style="left:31px;top:118px;width:86px;height:86px"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8.5" r="4.4"/><path d="M3.5 21.5c.9-4.6 4.4-7 8.5-7s7.6 2.4 8.5 7z"/></svg></div>
+        <div class="gl" style="left:138px;top:152px;width:130px;height:11px"></div>
+        <div class="gl" style="left:138px;top:172px;width:96px;height:9px"></div>
+        <div class="gl" style="left:385px;top:160px;width:60px;height:16px;border-radius:8px"></div>
+        <svg class="abs" id="idTiles" style="left:18px;top:218px;width:435px;height:222px" viewBox="0 0 435 222" aria-label="Your own identity, generated from your mix"></svg>
+      </div>
+
+      <!-- paint streaks -->
+      <svg class="abs" id="streaks" width="1672" height="940" style="left:0;top:0;pointer-events:none" aria-hidden="true"></svg>
+
+      <!-- equation -->
+      <svg class="abs" id="eqSvg" width="1672" height="940" style="left:0;top:0;pointer-events:none" aria-hidden="true"></svg>
+      <div class="eqop" style="left:715px;top:716px">+</div>
+      <div class="eqop" style="left:940px;top:716px">=</div>
+      <div class="eqlbl" id="eqA" style="left:510px;top:810px">Blue</div>
+      <div class="eqlbl" id="eqB" style="left:743px;top:810px">Yellow</div>
+      <div class="eqlbl" id="eqC" style="left:975px;top:810px">Green</div>
+      <div class="abs m2-cap">Different influences. Your ideas. One original channel.</div>
+    </div></div></div>
+
+    <div class="readout" aria-live="polite">
+      <div><span class="kick">Color theory</span><h4 id="harmName" style="margin-top:8px"></h4></div>
+      <div><p id="harmText" style="margin-top:0"></p><div class="chips" id="palChips" style="margin-top:10px"></div></div>
+      <div class="verd neutral" id="pverdict"></div>
+    </div>
+  </section>
+
+  <!-- ================= MODE 3 ================= -->
+  <section id="mode-3" data-w="1536" data-h="880" role="tabpanel" aria-labelledby="tab-3" hidden>
+    <div class="viewport"><div class="sizer"><div class="stage" style="width:1536px;height:880px">
+      <div class="abs m3-title">BE INSPIRED. BE ORIGINAL.</div>
+      <div class="abs m3-sub">DON’T COPY 1:1 <svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19" stroke="#E3261E" stroke-width="4.2" stroke-linecap="round"/></svg></div>
+      <div class="tlabel" style="left:96px;top:166px">REFERENCE</div>
+      <div class="thumb" id="refThumb" style="left:96px;top:192px"></div>
+      <svg class="arrow" style="left:740px;top:360px" viewBox="0 0 56 24"><path d="M2 12H52M42 3l10 9-10 9" fill="none" stroke="#2A2F3A" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="tlabel" id="takeLbl" style="left:800px;top:166px;width:640px;text-align:center"></div>
+      <div class="thumb" id="takeThumb" style="left:800px;top:192px"></div>
+      <div class="pairs" id="pairs" style="left:800px;top:574px"></div>
+      <div class="meter3" id="takeMeter" style="left:800px;top:796px"><i></i><i></i><i></i><span></span></div>
+      <div class="m3-verdict" id="takeVerdict" style="left:800px;top:826px;width:640px"></div>
+    </div></div></div>
+    <p style="text-align:center;color:#777;font-size:14px;margin:12px 0 0">Flip the switches under Your Unique Take. Three switches, eight possible thumbnails.</p>
+  </section>
+</div>
+
+<script>
+(function(){
+'use strict';
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+
+/* ---------- modes + scaling ---------- */
+const sections=[1,2,3].map(n=>document.getElementById('mode-'+n));
+function fitStages(){
+  sections.forEach(sec=>{
+    if(sec.hidden)return;
+    const W=+sec.dataset.w,H=+sec.dataset.h,vp=sec.querySelector('.viewport'),sizer=sec.querySelector('.sizer'),stage=sec.querySelector('.stage');
+    const s=Math.max(.5,Math.min(1,vp.clientWidth/W));
+    stage.style.transform=`scale(${s})`;sizer.style.width=W*s+'px';sizer.style.height=H*s+'px';
+  });
+  drawConnectors();
+  if(typeof updateDial==='function')updateDial();
+}
+function setMode(n){
+  sections.forEach((s,i)=>{const show=i+1===n;if(show&&s.hidden){s.classList.remove('enter');void s.offsetWidth;s.classList.add('enter');}s.hidden=!show;});
+  document.querySelectorAll('.modes button').forEach(b=>b.setAttribute('aria-selected',String(+b.dataset.mode===n)));
+  try{history.replaceState(null,'','#'+['titles','mix','thumbnails'][n-1]);}catch(e){}
+  fitStages();
+}
+document.querySelector('.modes').addEventListener('click',e=>{const b=e.target.closest('[data-mode]');if(b)setMode(+b.dataset.mode);});
+window.addEventListener('resize',fitStages);
+
+/* =========================================================
+   MODE 1 — One title. Many directions.
+   ========================================================= */
+const ALL_ANGLES=[
+ {id:'engineering',label:'Engineering',q:'How is {as} built to survive its job?',aud:'Makers, tinkerers and anyone who watches teardown videos to relax.',look:'Cutaways, macro shots of materials and a workbench feel.',beats:['Cut {as} clean in half on camera. Nobody expects what is inside.','Walk through every layer and material, and the problem each one solves.','Build a worse version on purpose and test it against the real thing.'],thumb:'{As} sliced open with the inside lit up. No text needed.'},
+ {id:'science',label:'Science',q:'What is {as} actually made of, and why?',aud:'Curious people who love “what’s really inside everyday stuff”.',look:'Lab-style close-ups, materials under a microscope and simple experiments.',beats:['Put {as} under a microscope and show something nobody has seen.','Explain the material science behind it in plain words.','Run one experiment that proves why the material matters.'],thumb:'Extreme close-up texture of the {s} with a magnifying-glass circle.'},
+ {id:'physics',label:'Physics',q:'What forces decide how {as} behaves?',aud:'Curious viewers who liked physics class but forgot the formulas.',look:'High-speed footage with force arrows and diagrams drawn over real shots.',beats:['Freeze-frame the instant {as} {m}. Ask viewers to guess what happens next.','Slow it down and draw the forces on screen, one arrow at a time, until the hidden part clicks.','Change one variable on camera and show the {s} behaving completely differently.'],thumb:'A real {s} frozen mid-motion, one equation, one arrow. Three words max.'},
+ {id:'design',label:'Design',q:'Why does {as} look exactly like this?',aud:'Designers, product nerds and people who notice details.',look:'Studio product shots, side-by-side comparisons and pencil sketches.',beats:['Show three fake versions of {as} next to the real one. Ask which is real.','Explain every curve and choice as the answer to a problem.','Redesign it yourself and show exactly what breaks.'],thumb:'The real {s} next to a strange redesigned one, with a single “?” in the corner.'},
+ {id:'history',label:'History',q:'How did {as} end up like this?',aud:'Story lovers and late-night documentary watchers.',look:'Archival photos, old ads and a timeline that builds across the screen.',beats:['Put the oldest {s} you can find next to a modern one.','Tell the story of each turning point and the people behind it.','Land on the one change that made the modern {s} possible.'],thumb:'Split frame: a sepia-toned old {s} vs. a modern {s}.'},
+ {id:'math',label:'Math',q:'What numbers are hiding in {as}?',aud:'People who say they hate math but can’t resist a good pattern.',look:'Clean motion graphics, with numbers tracking over real footage.',beats:['Put one surprising number on screen next to {as}. Let it sit.','Show where the number comes from, measuring and drawing right on the footage.','Use the math to make a prediction, then test it for real.'],thumb:'{As} covered in measurement lines with one giant number.'},
+ {id:'business',label:'Business',q:'Who makes money every time someone buys {as}?',aud:'Entrepreneurs and anyone who loves “how it’s made (and sold)”.',look:'Factory footage, price tags and simple money-flow graphics.',beats:['Put a price tag on {as} and ask what it really costs to make.','Follow the {s} from raw material to store shelf, adding up the costs.','Reveal who actually profits, and how much.'],thumb:'{As} with a giant price tag and an arrow pointing at it.'}
+];
+const ALL_SUBJECTS=[
+ {id:'golf',label:'Golf Ball',m:'leaves the clubface',facts:{
+  engineering:'Modern balls are layered: a soft core, stiffer mantles and a thin cover, each tuned for a different part of the swing.',
+  science:'Covers are made from polymers like urethane, which grip the grooves of the club and control spin.',
+  physics:'The dimples stir the air into a thin turbulent layer that hugs the ball longer, cutting drag roughly in half compared to a smooth ball.',
+  design:'The rules lock size and weight (at least 1.68 in wide, at most 1.62 oz), so every design battle happens inside those limits.',
+  history:'Golfers noticed that old, beaten-up balls flew farther than new smooth ones. The dimple was basically discovered by accident.',
+  math:'Most balls carry 300 to 500 dimples, and spacing them evenly on a sphere is a surprisingly hard geometry puzzle.',
+  business:'Tour sponsorships, custom fitting and balls lost in ponds. A golf ball is made to be replaced.'}},
+ {id:'racket',label:'Tennis Racket',m:'meets a fast serve',facts:{
+  engineering:'Rackets went from wood to metal to graphite composites. Each jump made them lighter, stiffer and more powerful.',
+  science:'Strings can be natural gut or synthetic polymers, and each one stretches and snaps back at a different rate.',
+  physics:'Hit the sweet spot and almost no shock reaches your hand. Miss it by an inch and your wrist feels everything.',
+  design:'Oversized racket heads made the sweet spot much bigger and changed how everyday players hit the ball.',
+  history:'Early rackets were wooden and strung with natural gut, made from actual animal intestine.',
+  math:'String tension, head size and string pattern trade power against control, and you can graph the sweet spot growing.',
+  business:'Some pros keep playing their old frames painted to look like the new model that’s on sale.'}},
+ {id:'bowling',label:'Bowling Pin',m:'gets clipped by the ball',facts:{
+  engineering:'Pins are glued-up blocks of maple under a tough plastic skin, built to take thousands of hits and still bounce predictably.',
+  science:'Under the glossy coat is hard maple, a wood picked because its dense grain survives thousands of impacts.',
+  physics:'A pin barely has to tilt before its center of mass passes the edge of its base. After that, gravity finishes the job.',
+  design:'Every curve of the silhouette decides where the weight sits, how the pin wobbles and how it falls.',
+  history:'Pins weren’t always reset by machine. For decades, “pinboys” set them by hand until automatic pinsetters took over in the 1950s.',
+  math:'Ten pins, one triangle, 12 inches apart. The geometry of the rack is why hitting the “pocket” works so well.',
+  business:'Bowling alleys go through pins constantly. A pin is a consumable, and someone is selling them by the thousands.'}},
+ {id:'skate',label:'Skateboard',m:'pops off the ground in an ollie',facts:{
+  engineering:'A typical deck is 7 thin layers of maple pressed into a curved shape, so it’s stiff but still has snap.',
+  science:'Wheels are polyurethane, a plastic chosen because it grips like rubber but lasts much longer.',
+  physics:'An ollie is a chain of torques. Snap the tail, the board pivots, the front foot drags it level. No hands needed.',
+  design:'The curved deck, the kicktails and the grip tape each exist because skaters needed a new trick to work.',
+  history:'Urethane wheels in the 1970s turned skateboarding from rattly clay wheels into a real sport.',
+  math:'Wheel hardness, wheel size and truck width change the turning radius. Small numbers make a big difference in feel.',
+  business:'The bottom of the deck is a canvas. Graphics sell boards, and pro-model decks are how skaters get paid.'}},
+ {id:'bat',label:'Baseball Bat',m:'connects with a fastball',facts:{
+  engineering:'Ash flexes and flakes, maple is harder and denser. The wood decides how a bat hits and how it breaks.',
+  science:'Wood density matters: a denser piece of maple is harder, which changes how much energy goes back into the ball.',
+  physics:'The sweet spot is where the bat’s vibrations cancel out. Hit it and the ball jumps. Miss it and your hands sting.',
+  design:'The knob, handle taper and barrel size shift the balance point, which changes how fast a hitter can swing.',
+  history:'Pros still swing wood, while many amateur leagues moved to metal bats decades ago.',
+  math:'Bat speed, pitch speed and launch angle combine into exit velocity, a number every analytics team lives by.',
+  business:'Pro bats are made to each player’s exact spec, and broken game bats turn into collectibles.'}},
+ {id:'soccer',label:'Soccer Ball',m:'curves around a wall of defenders',facts:{
+  engineering:'Newer balls use fewer, heat-bonded panels instead of stitching, which changes how they move through the air.',
+  science:'Air pressure inside the ball changes how bouncy and fast it is, so officials check it before matches.',
+  physics:'Spin makes the air push harder on one side (the Magnus effect). That’s how a free kick bends.',
+  design:'The black-and-white panel pattern stood out on black-and-white TV, which helped make it iconic.',
+  history:'Before rubber bladders, balls were built around inflated animal bladders.',
+  math:'The classic ball is a truncated icosahedron: 12 pentagons and 20 hexagons, 32 panels in all.',
+  business:'A new official ball launches for every World Cup, and millions of fans buy the replica.'}}
+];
+const ANGLES=['engineering','physics','math'].map(id=>ALL_ANGLES.find(a=>a.id===id));
+const SUBJECTS=['golf','bowling','bat'].map(id=>ALL_SUBJECTS.find(a=>a.id===id));
+const ENDINGS=[
+ {id:'explained',time:'13:42',label:'Explained',run:'12–15 min',promise:'Clarity. Every section ends with a one-sentence takeaway.',look:'Recap cards at the end of each section.',thumb:''},
+ {id:'slowmo',time:'7:15',label:'In Slow Motion',run:'6–8 min',promise:'Visuals. Half the runtime is high-speed footage.',look:'Shot at 1,000+ fps.',thumb:'Add motion blur so it feels fast.'},
+ {id:'simple',time:'9:08',label:'A Simple Breakdown',run:'8–10 min',promise:'Beginners welcome. No jargon without a quick definition.',look:'Hand-drawn analogies instead of equations.',thumb:''},
+ {id:'short',time:'0:58',label:'In 60 Seconds',run:'Under 60 s · Short',promise:'Speed. One hook, one fact, one payoff.',look:'Vertical 9:16, captions on screen.',thumb:'Crop tight so the subject fills a phone screen.'},
+ {id:'tested',time:'17:26',label:'Tested',run:'15–20 min',promise:'Proof. Every claim gets an on-camera experiment.',look:'Real experiments, with results on screen.',thumb:'Add a big pass/fail stamp.'},
+ {id:'none',time:'11:20',label:'',run:'10–14 min',promise:'A straight explainer. The title does the promising.',look:'',thumb:''}
+];
+const customA=[],customS=[];
+const allA=()=>ANGLES.concat(customA),allS=()=>SUBJECTS.concat(customS);
+const st={a:'physics',s:'bowling',e:'none'};
+let remix={a:'engineering',s:'golf',e:'explained'};
+const ORIGINAL={a:'physics',s:'bowling',e:'none'};
+
+const article=w=>/^[aeiou]/i.test(w)?'an':'a';
+const getA=id=>allA().find(x=>x.id===id),getS=id=>allS().find(x=>x.id===id),getE=id=>ENDINGS.find(x=>x.id===id);
+function fill(t,A,S){const s=S.label.toLowerCase(),as=article(s)+' '+s;
+  return t.split('{As}').join(cap(as)).split('{as}').join(as).split('{s}').join(s).split('{m}').join(S.m).split('{a}').join(A.label.toLowerCase());}
+const titleOf=c=>{const A=getA(c.a),S=getS(c.s),E=getE(c.e);return `The ${A.label} Hidden Inside ${article(S.label)} ${S.label}${E.label?' ['+E.label+']':''}`;};
+
+function buildLists(){
+  const mk=(panel,items,cur,addLabel)=>{
+    const list=$('#'+panel+' .list');
+    list.innerHTML=items.map(o=>`<button type="button" role="option" class="opt${o.id===cur?' on':''}" data-v="${esc(o.id)}" aria-selected="${o.id===cur}">${esc(o.label)}</button>`).join('')+
+      (addLabel?`<button type="button" class="opt add" data-add="1">+ ${addLabel}</button>`:'');
+  };
+  mk('p-a',allA(),st.a,null);
+  mk('p-s',allS(),st.s,null);
+  mk('p-e',ENDINGS.map(e=>({id:e.id,label:e.label?'['+e.label+']':'[No ending]'})),st.e,null);
+}
+function scrollToSelected(){
+  ['p-a','p-s','p-e'].forEach(p=>{const l=$('#'+p+' .list'),on=l.querySelector('.on');if(on){const t=on.offsetTop-l.clientHeight/2+on.offsetHeight/2;l.scrollTop=Math.max(0,t);}});
+}
+function fitLine(line,base,maxW){let f=base;line.style.fontSize=f+'px';while(line.scrollWidth>maxW&&f>28){f-=2;line.style.fontSize=f+'px';}}
+
+const animate=el=>{el.classList.remove('swap');void el.offsetWidth;el.classList.add('swap');};
+const setText=(el,t,anim)=>{if(el.textContent===t)return;el.textContent=t;if(anim)animate(el);};
+function markLists(){
+  [['p-a','a'],['p-s','s'],['p-e','e']].forEach(([p,k])=>$('#'+p+' .list').querySelectorAll('.opt[data-v]').forEach(o=>{const on=o.dataset.v===st[k];o.classList.toggle('on',on);o.setAttribute('aria-selected',String(on));}));
+}
+function renderTop(anim){
+  const A=getA(st.a),S=getS(st.s),E=getE(st.e);
+  setText($('#topA'),A.label,anim);setText($('#topS'),S.label,anim);$('#topArt').textContent=article(S.label);
+  const te=$('#topE');setText(te,E.label?`[${E.label}]`:'[ + Add ending ]',anim);te.classList.toggle('has',!!E.label);
+  fitLine($('#topLine'),72,1600);
+  drawConnectors();
+}
+function renderRemix(){
+  const A=getA(remix.a),S=getS(remix.s),E=getE(remix.e);
+  $('#remixLine').innerHTML=`<span class="w">The</span><span class="tchip a">${esc(A.label)}</span><span class="w">Hidden Inside ${article(S.label)}</span><span class="tchip s">${esc(S.label)}</span>`+(E.label?`<span class="tbox">[${esc(E.label)}]</span>`:'');
+  fitLine($('#remixLine'),58,1560);
+}
+function rerollAnim(){const l=$('#remixLine');l.classList.remove('rise');void l.offsetWidth;l.classList.add('rise');}
+function newRemix(){
+  const as=ANGLES.filter(a=>a.id!==st.a),ss=SUBJECTS.filter(s=>s.id!==st.s);
+  remix={a:pick(as).id,s:pick(ss).id,e:pick(ENDINGS.filter(e=>e.id!==st.e)).id};renderRemix();rerollAnim();
+}
+let rendered=false;
+function renderBrief(){
+  const A=getA(st.a),S=getS(st.s),E=getE(st.e);
+  const fact=(S.facts&&S.facts[A.id])||fill(`Every {s} hides one ${A.label.toLowerCase()} detail most people have never noticed. Find it, and that detail becomes your whole video.`,A,S);
+  const b={'b-title':titleOf(st),'b-fact':fact,'b-q':fill(A.q,A,S),'b-aud':A.aud,'b-look':fill(A.look,A,S),'b-prom':E.promise,'b-run':E.run,
+    'b-b0':fill(A.beats[0],A,S),'b-b1':fill(A.beats[1],A,S),'b-b2':fill(A.beats[2],A,S),'b-thumb':fill(A.thumb,A,S)};
+  for(const k in b){const el=document.getElementById(k);if(el.textContent!==b[k]){el.textContent=b[k];if(rendered){el.classList.remove('fresh');void el.offsetWidth;el.classList.add('fresh');}}}
+  rendered=true;
+  $('#b-time').textContent=E.time;
+  loadThumb(A,S);
+  const sw=[],parts=new Set();
+  if(st.a!==ORIGINAL.a){sw.push(['Physics',A.label]);['question','audience','look','all 3 beats','thumbnail'].forEach(p=>parts.add(p));}
+  if(st.s!==ORIGINAL.s){sw.push(['Bowling Pin',S.label]);['hidden fact','question','all 3 beats','thumbnail'].forEach(p=>parts.add(p));}
+  if(st.e!=='none'){sw.push(['no ending','['+E.label+']']);['runtime','promise'].forEach(p=>parts.add(p));}
+  $('#delta').innerHTML=sw.length?`<b>${sw.length} change${sw.length>1?'s':''}:</b>`+sw.map(([a,b])=>`<span class="sw"><s>${esc(a)}</s> → ${esc(b)}</span>`).join('')+`<span>That gives you a new ${[...parts].join(', ')}. Same frame, different video.</span>`
+    :'<b>This is the original title.</b> Pick a different angle, subject or ending above and the brief below rewrites itself. Changed lines light up.';
+}
+function renderAll(scroll,anim){buildLists();renderTop(anim);renderBrief();if(scroll)scrollToSelected();}
+
+function drawConnectors(){
+  const svg=$('#connectors');if(!svg||$('#mode-1').hidden)return;
+  const stage=svg.parentElement,sr=stage.getBoundingClientRect(),sc=sr.width/1672||1;
+  const segs=[['#topA','#p-a','#1E6FE0'],['#topS','#p-s','#22A447'],['#topE','#p-e','#8A8A8A']];
+  svg.innerHTML=segs.map(([c,p,col])=>{
+    const cr=$(c).getBoundingClientRect(),pr=$(p).getBoundingClientRect();
+    const x1=(cr.left+cr.width/2-sr.left)/sc,y1=(cr.bottom-sr.top)/sc+6,x2=(pr.left+pr.width/2-sr.left)/sc,y2=268;
+    const mid=(y1+y2)/2;
+    return Math.abs(x1-x2)<3?`<path d="M${x2} ${y1}V${y2}" stroke="${col}" stroke-width="3"/>`:`<path d="M${x1} ${y1}V${mid}H${x2}V${y2}" fill="none" stroke="${col}" stroke-width="3" stroke-linejoin="round"/>`;
+  }).join('');
+}
+
+['p-a','p-s','p-e'].forEach(p=>{
+  const panel=$('#'+p),key={'p-a':'a','p-s':'s','p-e':'e'}[p];
+  panel.addEventListener('click',e=>{
+    const ch=e.target.closest('.chev');
+    if(ch){$('#'+p+' .list').scrollBy({top:+ch.dataset.dir*120});return;}
+    const add=e.target.closest('[data-add]');
+    if(add){
+      const inp=document.createElement('input');inp.className='opt-input';inp.id='custom-'+p;inp.maxLength=24;inp.placeholder=p==='p-a'?'e.g. Chemistry':'e.g. Sourdough Starter';
+      add.replaceWith(inp);inp.focus();
+      const commit=()=>{const v=inp.value.trim().replace(/\s+/g,' ').replace(/(^|\s)\S/g,c=>c.toUpperCase());
+        if(v){const id='c-'+Date.now();
+          if(p==='p-a'){const tl=v.toLowerCase();customA.push({id,label:v,q:`What does ${tl} reveal about {as}?`,aud:`People already into ${tl}, plus everyone who never thought it applied to everyday things.`,look:'Real footage first, then one clear visual that explains the hidden part.',beats:['Show {as} doing its one job. Ask what '+tl+' has to do with it.','Reveal the '+tl+' hiding in plain sight, one visual at a time.','Change something about the {s} on camera and show the '+tl+' in action.'],thumb:'{As} with one bold visual clue about '+tl+'. Three words max.'});st.a=id;}
+          else{customS.push({id,label:v,m:'does its one job',facts:null});st.s=id;}}
+        renderAll(true);};
+      inp.addEventListener('keydown',ev=>{if(ev.key==='Enter')commit();if(ev.key==='Escape')renderAll(false);});
+      inp.addEventListener('blur',()=>{if(inp.isConnected)commit();});
+      return;
+    }
+    const o=e.target.closest('.opt');if(!o)return;
+    if(st[key]===o.dataset.v)return;st[key]=o.dataset.v;markLists();renderTop(true);renderBrief();
+  });
+});
+[['#topA','#p-a'],['#topS','#p-s'],['#topE','#p-e']].forEach(([c,p])=>$(c).addEventListener('click',()=>{
+  const el=$(p);el.classList.remove('pulse');void el.offsetWidth;el.classList.add('pulse');
+  const on=el.querySelector('.opt.on')||el.querySelector('.opt');on&&on.focus({preventScroll:true});
+}));
+$('#reroll').addEventListener('click',newRemix);
+const useRemix=()=>{Object.assign(st,remix);renderAll(true,true);newRemix();};
+$('#remix').addEventListener('click',useRemix);
+$('#remix').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();useRemix();}});
+
+// thumbnail library: thumbs/<angle>-<subject>.(jpg|png|webp)
+const slug=l=>l.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+const THUMB_EXT=['png','jpg','webp','jpeg'],thumbCache={};let thumbTok=0,lastThumbKey='';
+function loadThumb(A,S){
+  const key=slug(A.label)+'-'+slug(S.label),img=$('#b-img'),empty=$('#b-empty'),wrap=$('#b-thumbwrap'),tok=++thumbTok;
+  const changed=lastThumbKey&&key!==lastThumbKey;lastThumbKey=key;
+  const show=src=>{if(tok!==thumbTok)return;
+    if(src&&changed&&!img.hidden&&img.getAttribute('src')!==src){
+      img.classList.add('out');
+      setTimeout(()=>{if(tok!==thumbTok)return;img.onload=()=>img.classList.remove('out');img.src=src;if(img.complete)img.classList.remove('out');},180);
+      img.alt=A.label+' hidden inside '+article(S.label)+' '+S.label+' thumbnail';return;}
+    if(src){img.src=src;img.alt=A.label+' hidden inside '+article(S.label)+' '+S.label+' thumbnail';img.hidden=false;empty.hidden=true;}
+    else{img.hidden=true;img.removeAttribute('src');empty.hidden=false;$('#b-file').textContent=key+'.jpg';}};
+  if(key in thumbCache){show(thumbCache[key]);return;}
+  let i=0;const tryNext=()=>{if(i>=THUMB_EXT.length){thumbCache[key]=null;show(null);return;}
+    const src='thumbs/'+key+'.'+THUMB_EXT[i++],t=new Image();
+    t.onload=()=>{thumbCache[key]=src;show(src);};t.onerror=tryNext;t.src=src;};
+  tryNext();
+}
+renderAll(true);renderRemix();
+// preload the whole library so switching is instant
+ANGLES.forEach(a=>SUBJECTS.forEach(b=>{const key=slug(a.label)+'-'+slug(b.label);if(key in thumbCache)return;
+  let i=0;const next=()=>{if(i>=THUMB_EXT.length){thumbCache[key]=null;return;}const src='thumbs/'+key+'.'+THUMB_EXT[i++],t=new Image();t.onload=()=>{thumbCache[key]=src;};t.onerror=next;t.src=src;};next();}));
+
+/* =========================================================
+   MODE 2 — Mix inspiration. Create your own.
+   ========================================================= */
+const CHANNELS=[
+ {name:'Deep Blues',main:'#1F5FD6',shades:['#123E9E','#1F5FD6','#3E86EA','#0F3A8C','#2C6FE0','#7FB6F2']},
+ {name:'Sunny Yellows',main:'#F5B90F',shades:['#F4B400','#FFD447','#F0A00A','#F6C52C','#FFE07A','#F7AE12']},
+ {name:'Bold Reds',main:'#D8322A',shades:['#B8231C','#E0443A','#F07C72','#9E1A14','#E5392F','#F5A198']},
+ {name:'Royal Purples',main:'#7A3DC2',shades:['#5A2A9A','#7A3DC2','#A274DD','#4A2180','#8A4ED0','#C3A4EC']},
+ {name:'Hot Pinks',main:'#E4418B',shades:['#C22A6F','#E4418B','#F27BB1','#A81F5E','#EC5C9C','#F7A9CD']},
+ {name:'Ocean Teals',main:'#14A3A0',shades:['#0C7E7B','#14A3A0','#4CC7C2','#0A6664','#1DB5B1','#8ADFDB']},
+ {name:'Warm Oranges',main:'#F07A1A',shades:['#D6600C','#F07A1A','#F7A052','#B84E08','#F58A2B','#FBC08A']}
+];
+const LETTERS='ABCDEFG',chLabel=i=>'Channel '+LETTERS[i];
+const COPY_LIMIT=.6; // more than 60% from one channel or one color = copying
+const hex2rgb=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+const rgb2hex=c=>'#'+c.map(v=>Math.round(Math.max(0,Math.min(255,v))).toString(16).padStart(2,'0')).join('');
+const css=(c,a=1)=>`rgba(${c.map(Math.round).join(',')},${a})`;
+const toLin=v=>Math.max(.004,Math.pow(v/255,2.2));
+const fromLin=v=>255*Math.pow(Math.max(0,Math.min(1,v)),1/2.2);
+function geomix(a,b,t){return a.map((v,i)=>fromLin(Math.exp((1-t)*Math.log(toLin(v))+t*Math.log(toLin(b[i])))));}
+function geomixMany(list){const W=list.reduce((s,x)=>s+x.w,0)||1;return[0,1,2].map(i=>fromLin(Math.exp(list.reduce((s,x)=>s+(x.w/W)*Math.log(toLin(x.rgb[i])),0))));}
+function hsl(c){const[r,g,b]=c.map(v=>v/255),mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2,d=mx-mn;if(!d)return[0,0,l];
+  const s=d/(1-Math.abs(2*l-1));let h;if(mx===r)h=((g-b)/d)%6;else if(mx===g)h=(b-r)/d+2;else h=(r-g)/d+4;return[(h*60+360)%360,s,l];}
+function hsl2rgb(h,s,l){const k=n=>(n+h/30)%12,a=s*Math.min(l,1-l),f=n=>l-a*Math.max(-1,Math.min(k(n)-3,9-k(n),1));return[f(0)*255,f(8)*255,f(4)*255];}
+function hueName(c){const[h,s,l]=hsl(c);
+  if(s<.14||l>.93||l<.09)return l>.8?'White':l<.2?'Black':'Gray';
+  if(h<14||h>=345)return'Red';if(h<40)return l<.4?'Brown':'Orange';if(h<64)return'Yellow';if(h<90)return'Yellow-green';
+  if(h<155)return'Green';if(h<185)return'Teal';if(h<205)return'Cyan';if(h<250)return'Blue';if(h<280)return'Violet';if(h<315)return'Purple';return'Pink';}
+
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function impasto(c,x,y,w,h,base,shades,r,n){
+  c.save();c.beginPath();c.roundRect?c.roundRect(x,y,w,h,7):c.rect(x,y,w,h);c.clip();
+  c.fillStyle=base;c.fillRect(x,y,w,h);c.lineCap='round';
+  for(let i=0;i<n;i++){
+    const col=hex2rgb(shades[Math.floor(r()*shades.length)]);const sx=x+r()*w,sy=y+r()*h,len=w*(.3+r()*.6),ang=(r()-.5)*.9;
+    c.strokeStyle=css(col,.9);c.lineWidth=5+r()*14;c.beginPath();c.moveTo(sx-Math.cos(ang)*len/2,sy-Math.sin(ang)*len/2);
+    c.quadraticCurveTo(sx+(r()-.5)*20,sy+(r()-.5)*20,sx+Math.cos(ang)*len/2,sy+Math.sin(ang)*len/2);c.stroke();
+    c.strokeStyle='rgba(255,255,255,.35)';c.lineWidth=1.6;c.stroke();
+    c.strokeStyle='rgba(0,0,0,.12)';c.lineWidth=1.2;c.save();c.translate(1.5,2);c.stroke();c.restore();
+  }
+  c.restore();
+}
+const DPR=2;
+function prepCv(cv,w,h){cv.width=w*DPR;cv.height=h*DPR;const c=cv.getContext('2d');c.setTransform(DPR,0,0,DPR,0,0);c.clearRect(0,0,w,h);return c;}
+const TW=128,TH=67,TG=6; // tile geometry inside 396x146 tiles canvas
+const tileRect=i=>[(i%3)*(TW+TG)+1,Math.floor(i/3)*(TH+TG)+1,TW,TH];
+const brush={rgb:hex2rgb('#1F5FD6'),ch:0,tile:-1,size:22};
+const stage2=$('#stage2');
+const shade=(hex,k)=>{const c=hex2rgb(hex);return rgb2hex(k<0?c.map(v=>v*(1+k)):c.map(v=>v+(255-v)*k));};
+function setVar(k,hex){stage2.style.setProperty('--'+k,hex);stage2.style.setProperty('--'+k+'-dk',shade(hex,-.3));stage2.style.setProperty('--'+k+'-lt',shade(hex,.5));}
+const PERSON='<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8.5" r="4.4"/><path d="M3.5 21.5c.9-4.6 4.4-7 8.5-7s7.6 2.4 8.5 7z"/></svg>';
+
+/* ---- channel dial ---- */
+const dial=$('#dial'),track=$('#dialTrack');
+track.innerHTML=CHANNELS.map((ch,i)=>`<div class="card dcard" data-i="${i}" role="option" aria-selected="false" aria-label="${chLabel(i)}: ${ch.name}">
+  <div class="clabel" style="left:20px;top:18px">CHANNEL ${LETTERS[i]}</div><div class="cfam">${ch.name}</div>
+  <canvas class="banner-cv" style="left:14px;top:44px;width:396px;height:64px"></canvas>
+  <div class="avatar" style="left:22px;top:84px;width:72px;height:72px;background:${ch.main}">${PERSON}</div>
+  <div class="gl" style="left:110px;top:118px;width:122px;height:10px"></div><div class="gl" style="left:110px;top:136px;width:92px;height:8px"></div>
+  <div class="gl" style="left:346px;top:122px;width:58px;height:16px;border-radius:8px"></div>
+  <canvas class="tiles-cv" style="left:14px;top:170px;width:396px;height:146px" aria-label="${chLabel(i)} paints. Click a tile to load your brush."></canvas>
+  <div class="selring" hidden></div><div class="hovring" hidden></div></div>`).join('');
+const cards=[...track.querySelectorAll('.dcard')];
+cards.forEach((card,i)=>{const ch=CHANNELS[i],r=rng(i*131+7);
+  impasto(prepCv(card.querySelector('.banner-cv'),396,64),0,0,396,64,ch.main,ch.shades,r,34);
+  const tc=prepCv(card.querySelector('.tiles-cv'),396,146);
+  ch.shades.forEach((sh,t)=>{const[x,y,w,h]=tileRect(t);impasto(tc,x,y,w,h,sh,[sh,ch.shades[(t+1)%6],ch.shades[(t+3)%6]],r,10);});
+});
+const tileAt=(tc,e)=>{const r=tc.getBoundingClientRect(),x=(e.clientX-r.left)/r.width*396,y=(e.clientY-r.top)/r.height*146;
+  return Math.min(1,Math.max(0,Math.floor(y/(TH+TG))))*3+Math.min(2,Math.max(0,Math.floor(x/(TW+TG))));};
+let active=-1,dialRaf=0;
+function updateDial(){
+  if($('#mode-2').hidden)return;
+  const mid=dial.scrollTop+dial.clientHeight/2;let best=0,bd=1e9;
+  cards.forEach((c,i)=>{const d=Math.abs(c.offsetTop+c.offsetHeight/2-mid)/352;if(d<bd){bd=d;best=i;}
+    c.style.filter=d<.03?'none':`blur(${Math.min(5,d*5).toFixed(2)}px)`;
+    c.style.opacity=(1-Math.min(.62,d*.62)).toFixed(3);
+    c.style.transform=`scale(${(1-Math.min(.1,d*.1)).toFixed(3)})`;});
+  if(best!==active){active=best;
+    cards.forEach((c,i)=>{c.classList.toggle('active',i===active);c.setAttribute('aria-selected',String(i===active));});
+    const ch=CHANNELS[active];setVar('s',ch.main);
+    $('#dialHint').innerHTML=`<i style="background:${ch.main}"></i>${chLabel(active)} · ${ch.name} · ${active+1} / ${CHANNELS.length}`;
+    $('#dialUp').disabled=active===0;$('#dialDown').disabled=active===CHANNELS.length-1;}
+}
+function goTo(i){i=Math.max(0,Math.min(CHANNELS.length-1,i));const c=cards[i];
+  dial.scrollTo({top:c.offsetTop-(dial.clientHeight-c.offsetHeight)/2,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});}
+dial.addEventListener('scroll',()=>{if(!dialRaf)dialRaf=requestAnimationFrame(()=>{dialRaf=0;updateDial();});},{passive:true});
+dial.addEventListener('keydown',e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();goTo(active+(e.key==='ArrowDown'?1:-1));}});
+$('#dialUp').addEventListener('click',()=>goTo(active-1));
+$('#dialDown').addEventListener('click',()=>goTo(active+1));
+track.addEventListener('click',e=>{const c=e.target.closest('.dcard');if(!c)return;const i=+c.dataset.i;
+  if(i!==active){goTo(i);return;}
+  const tc=e.target.closest('.tiles-cv');if(tc)dip(i,tileAt(tc,e));});
+track.addEventListener('mousemove',e=>{const tc=e.target.closest('.tiles-cv');cards.forEach(c=>{const h=c.querySelector('.hovring');if(!tc||c!==tc.closest('.dcard'))h.hidden=true;});
+  if(!tc)return;const h=tc.closest('.dcard').querySelector('.hovring'),[x,y,w,hh]=tileRect(tileAt(tc,e));
+  h.hidden=false;h.style.left=(14+x-2)+'px';h.style.top=(170+y-2)+'px';h.style.width=(w+4)+'px';h.style.height=(hh+4)+'px';});
+track.addEventListener('mouseleave',()=>cards.forEach(c=>c.querySelector('.hovring').hidden=true));
+function updateSelRing(){cards.forEach((c,i)=>{const ring=c.querySelector('.selring'),on=i===brush.ch&&brush.tile>=0;ring.hidden=!on;
+  if(on){const[x,y,w,h]=tileRect(brush.tile);ring.style.left=(14+x-3)+'px';ring.style.top=(170+y-3)+'px';ring.style.width=(w+6)+'px';ring.style.height=(h+6)+'px';}});}
+function dip(ci,t){brush.ch=ci;brush.tile=t;brush.rgb=hex2rgb(CHANNELS[ci].shades[t]);updateSelRing();}
+
+/* ---- paint canvas (416x322): banner + six video tiles ---- */
+const PW=416,PH=322;
+const REG=[[0,0,416,72]];for(let i=0;i<6;i++)REG.push([(i%3)*141,136+Math.floor(i/3)*95,134,88]);
+const pcv=$('#paintCv');pcv.width=PW*DPR;pcv.height=PH*DPR;
+const ctx=pcv.getContext('2d',{willReadFrequently:true});ctx.setTransform(DPR,0,0,DPR,0,0);
+function clipRegions(){ctx.beginPath();REG.forEach(([x,y,w,h],i)=>{ctx.roundRect?ctx.roundRect(x,y,w,h,i?7:10):ctx.rect(x,y,w,h);});ctx.clip();}
+function paperBase(){ctx.save();ctx.setTransform(DPR,0,0,DPR,0,0);ctx.clearRect(0,0,PW,PH);clipRegions();ctx.fillStyle='#F1F2F4';ctx.fillRect(0,0,PW,PH);ctx.restore();}
+paperBase();
+let infl={}; // channel index -> {w, lin}
+function sample(x,y){const px=Math.max(0,Math.min(pcv.width-1,Math.round(x*DPR))),py=Math.max(0,Math.min(pcv.height-1,Math.round(y*DPR)));return ctx.getImageData(px,py,1,1).data;}
+const isPaper=u=>Math.abs(u[0]-241)<4&&Math.abs(u[1]-242)<4&&Math.abs(u[2]-244)<4;
+function dab(x,y){
+  // strong, opaque paint: the new color covers what's underneath and only picks up a hint of it
+  const r=brush.size/2,u=sample(x,y);let dep=brush.rgb;
+  if(u[3]>200&&!isPaper(u))dep=geomix(brush.rgb,[u[0],u[1],u[2]],.1);
+  ctx.save();clipRegions();
+  ctx.fillStyle=css(dep,.95);ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill();
+  for(let i=0;i<4;i++){const an=Math.random()*6.28,d=Math.random()*r*.75,sh=(Math.random()-.5)*44;
+    ctx.fillStyle=css(dep.map(v=>v+sh),.4);ctx.beginPath();ctx.arc(x+Math.cos(an)*d,y+Math.sin(an)*d,r*(.14+Math.random()*.18),0,7);ctx.fill();}
+  ctx.restore();
+  const w=r*r,I=infl[brush.ch]||(infl[brush.ch]={w:0,lin:[0,0,0]});I.w+=w;brush.rgb.forEach((v,i)=>I.lin[i]+=toLin(v)*w);
+}
+let last=null;
+function strokeTo(x,y){
+  if(!last){dab(x,y);last=[x,y];return;}
+  const dx=x-last[0],dy=y-last[1],dist=Math.hypot(dx,dy),step=Math.max(1.2,brush.size*.18);if(dist<step)return;
+  const n=Math.floor(dist/step),ux=dx/dist,uy=dy/dist;for(let i=1;i<=n;i++)dab(last[0]+ux*step*i,last[1]+uy*step*i);last=[last[0]+ux*step*n,last[1]+uy*step*n];
+}
+const undoStack=[];
+function pushUndo(){const c=document.createElement('canvas');c.width=pcv.width;c.height=pcv.height;c.getContext('2d').drawImage(pcv,0,0);undoStack.push({c,infl:JSON.parse(JSON.stringify(infl))});if(undoStack.length>12)undoStack.shift();}
+$('#undo').addEventListener('click',()=>{const u=undoStack.pop();if(!u)return;ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,pcv.width,pcv.height);ctx.drawImage(u.c,0,0);ctx.restore();infl=u.infl;analyze();});
+$('#clear').addEventListener('click',()=>{pushUndo();paperBase();infl={};analyze();});
+$('#bsize').addEventListener('input',e=>brush.size=+e.target.value);
+const toXY=e=>{const r=pcv.getBoundingClientRect();return[(e.clientX-r.left)/r.width*PW,(e.clientY-r.top)/r.height*PH];};
+let painting=false,lastA=0;
+pcv.addEventListener('pointerdown',e=>{if(e.button!==0)return;e.preventDefault();pcv.setPointerCapture(e.pointerId);pushUndo();painting=true;last=null;strokeTo(...toXY(e));});
+pcv.addEventListener('pointermove',e=>{if(!painting)return;const evs=e.getCoalescedEvents?e.getCoalescedEvents():[];(evs.length?evs:[e]).forEach(ev=>strokeTo(...toXY(ev)));
+  const now=performance.now();if(now-lastA>120){lastA=now;analyze();}});
+const endStroke=()=>{if(!painting)return;painting=false;last=null;analyze();};
+pcv.addEventListener('pointerup',endStroke);pcv.addEventListener('pointercancel',endStroke);
+
+/* ---- static art, colored through CSS variables so every change fades smoothly ---- */
+function streakV(d,k,w){return `<path d="${d}" fill="none" style="stroke:var(--${k}-dk)" stroke-width="${w+6}" stroke-linecap="round" opacity=".9"/><path d="${d}" fill="none" style="stroke:var(--${k})" stroke-width="${w}" stroke-linecap="round"/><path d="${d}" fill="none" style="stroke:var(--${k}-lt)" stroke-width="${w*.22}" stroke-linecap="round" opacity=".8" transform="translate(-3 -5)"/><path d="${d}" fill="none" style="stroke:var(--${k}-dk)" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 14" opacity=".5" transform="translate(4 6)"/>`;}
+const dotsV=(k,pts)=>pts.map(([x,y,r])=>`<circle cx="${x}" cy="${y}" r="${r}" style="fill:var(--${k})"/>`).join('');
+$('#streaks').innerHTML=streakV('M466 470C530 470 560 452 640 446','s',34)+dotsV('s',[[520,500,6],[548,430,4],[590,488,5],[500,440,3]])+
+  streakV('M1030 500C1075 486 1098 440 1128 408','id',26)+'<path d="M1110 380L1162 386L1134 430Z" style="fill:var(--id);stroke:var(--id-dk)" stroke-width="3" stroke-linejoin="round"/>'+
+  dotsV('id',[[1075,520,5],[1050,530,3],[1098,470,4]]);
+function blobV(cx,cy,k){return `<g transform="translate(${cx} ${cy})"><ellipse cx="4" cy="44" rx="72" ry="10" fill="rgba(0,0,0,.12)"/>
+  <path d="M-70 10C-78 -20 -50 -48 -10 -46C20 -60 62 -44 72 -14C84 14 64 42 30 44C0 52 -30 50 -52 38C-66 32 -68 22 -70 10Z" style="fill:var(--${k}-dk)"/>
+  <path d="M-64 6C-70 -20 -46 -42 -10 -40C18 -52 58 -38 66 -12C76 12 58 36 28 38C0 44 -28 42 -48 32C-60 26 -62 18 -64 6Z" style="fill:var(--${k})"/>
+  <path d="M-44 -16C-30 -30 -6 -30 10 -26M-30 4C-10 -8 20 -8 44 -2M-20 22C0 16 22 16 40 20" style="stroke:var(--${k}-lt)" stroke-width="5" fill="none" stroke-linecap="round" opacity=".75"/>
+  <path d="M-40 -8C-20 -18 10 -20 36 -12" style="stroke:var(--${k}-dk)" stroke-width="3" fill="none" stroke-linecap="round" opacity=".5"/></g>`;}
+$('#eqSvg').innerHTML=blobV(610,752,'ea')+blobV(843,754,'eb')+blobV(1075,752,'ec');
+(function buildIdentity(){
+  const F=n=>`style="fill:var(--c${n})"`,S=n=>`style="stroke:var(--c${n})"`;
+  let b=`<rect width="435" height="84" ${F(1)}/>`;
+  for(let i=0;i<14;i++){const x=i*38-40,n=[2,3,1,4,6][i%5];b+=`<path d="M${x} 90L${x+70} -6" ${S(n)} stroke-width="${18+(i%3)*6}" stroke-linecap="round"/>`;}
+  b+=`<path d="M0 50C120 20 260 80 435 30" ${S(4)} stroke-width="4" fill="none" opacity=".6"/>`;
+  $('#idBanner').innerHTML=b;
+  const T=(i,inner,bg)=>{const x=(i%3)*147,y=Math.floor(i/3)*115;return `<g transform="translate(${x} ${y})"><clipPath id="tc${i}"><rect width="141" height="107" rx="8"/></clipPath><g clip-path="url(#tc${i})"><rect width="141" height="107" ${F(bg)}/>${inner}</g></g>`;};
+  let t='';
+  t+=T(0,`<circle cx="98" cy="30" r="12" ${F(4)}/><path d="M0 90L40 44L70 72L98 50L141 88V107H0Z" ${F(2)}/><path d="M0 107L30 80L62 96L100 74L141 100V107Z" ${F(5)}/>`,3);
+  t+=T(1,`<path d="M20 100C10 50 60 6 130 8C130 70 90 110 20 100Z" ${F(1)}/><path d="M20 100C60 70 90 40 128 10" ${S(4)} stroke-width="3" fill="none"/><path d="M50 78L44 50M70 60L66 32M86 46L86 22M60 72L90 70M78 54L108 50" ${S(4)} stroke-width="2" fill="none"/>`,5);
+  t+=T(2,[20,38,56,74,92].map(y=>`<path d="M-10 ${y}C20 ${y-14} 40 ${y+14} 70 ${y}S120 ${y-14} 150 ${y}" ${S(4)} stroke-width="5" fill="none"/>`).join(''),1);
+  t+=T(3,`<circle cx="104" cy="28" r="12" ${F(4)}/><rect x="18" y="40" width="72" height="67" ${F(2)}/><rect x="30" y="54" width="12" height="16" ${F(3)}/><rect x="54" y="54" width="12" height="16" ${F(3)}/><path d="M0 107L141 92V107Z" ${F(5)}/>`,3);
+  t+=T(4,`<path d="M70 104C30 100 6 70 14 34C40 6 110 8 128 40C136 76 108 104 70 104Z" ${F(2)}/><path d="M70 104V20M70 60L30 40M70 60L112 38M70 80L36 70M70 80L108 70M70 40L46 22M70 40L96 22" ${S(5)} stroke-width="5"/>`,6);
+  t+=T(5,`<path d="M0 30C40 20 90 34 141 20V107H0Z" ${F(1)}/><path d="M60 107C70 86 40 76 58 58S96 44 86 30" ${S(4)} stroke-width="12" fill="none" stroke-linecap="round"/><path d="M0 44C30 40 40 52 70 46" ${S(2)} stroke-width="10" fill="none"/>`,3);
+  $('#idTiles').innerHTML=t;
+  $('#idAvatar').style.background='var(--c1)';
+})();
+function setIdentity(base){
+  const[h]=hsl(base),sh=(dl,ds=0,dh=0)=>rgb2hex(hsl2rgb((h+dh+360)%360,Math.max(.25,Math.min(.9,.62+ds)),Math.max(.12,Math.min(.9,.42+dl))));
+  [sh(0),sh(-.14),sh(.16),sh(.3,-.1),sh(-.22),sh(.08,.1,-14)].forEach((c,i)=>stage2.style.setProperty('--c'+(i+1),c));
+  setVar('id',sh(0));
+}
+
+/* ---- color theory ---- */
+const sm=document.createElement('canvas');sm.width=104;sm.height=80;const smx=sm.getContext('2d',{willReadFrequently:true});
+const HARM={
+ empty:['Blank canvas','Nothing painted yet. Scroll the channel dial, click a paint tile, then drag across Your Creative Palette.'],
+ neutral:['Neutrals','Mostly grays. Clean, but with no hue it’s hard to recognize your channel at a glance.'],
+ mono:['Monochromatic','One hue in different strengths. Recognizable, but easy to mistake for the channel you borrowed it from.'],
+ analog:['Analogous','Neighbors on the color wheel, like blue + green + yellow-green. Calm, cohesive and it already feels like a brand.'],
+ comp:['Complementary','Opposites on the wheel. Maximum contrast, so thumbnails read even at phone size. Let one side dominate.'],
+ split:['Complementary + accent','Two opposites plus a neighbor. High contrast with extra personality. Keep the accent small.'],
+ triad:['Triadic','Three hues spread evenly around the wheel. Playful and energetic. Pick one as the main ground.'],
+ wide:['Wide spread','Lots of hues at once. Energetic, but noisy in a crowded feed. Pull it back to 2–3 hues.']
+};
+const circ=(a,b)=>{const d=Math.abs(a-b)%360;return d>180?360-d:d;};
+function harmony(hues){if(!hues.length)return'neutral';if(hues.length===1)return'mono';
+  const s=[...hues].sort((a,b)=>a-b);let mg=0;for(let i=0;i<s.length;i++){const g=i===s.length-1?s[0]+360-s[i]:s[i+1]-s[i];if(g>mg)mg=g;}
+  const spread=360-mg;if(spread<=40)return'mono';if(spread<=110)return'analog';
+  let far=false;for(let i=0;i<s.length;i++)for(let j=i+1;j<s.length;j++)if(circ(s[i],s[j])>=145)far=true;
+  if(s.length===2)return far?'comp':'wide';
+  if(s.length===3){const g=[s[1]-s[0],s[2]-s[1],s[0]+360-s[2]];if(g.every(x=>x>=75&&x<=165))return'triad';}
+  return far?'split':'wide';}
+function analyze(){
+  smx.clearRect(0,0,104,80);smx.drawImage(pcv,0,0,104,80);const d=smx.getImageData(0,0,104,80).data;
+  const bins=Array.from({length:12},()=>({n:0,r:0,g:0,b:0}));let painted=0;
+  for(let i=0;i<d.length;i+=4){if(d[i+3]<200)continue;const c=[d[i],d[i+1],d[i+2]];if(isPaper(c))continue;
+    const[h,sat,l]=hsl(c);if(sat<.16||l>.92||l<.08)continue;painted++;const B=bins[Math.floor(((h+15)%360)/30)];B.n++;B.r+=c[0];B.g+=c[1];B.b+=c[2];}
+  const entries=bins.filter(b=>b.n).map(b=>({rgb:[b.r/b.n,b.g/b.n,b.b/b.n],n:b.n})).sort((a,b)=>b.n-a.n);
+  const hasPaint=painted>=60;
+  const sig=entries.filter(e=>e.n/painted>=.1).slice(0,4);
+  const hk=hasPaint?harmony(sig.map(e=>hsl(e.rgb)[0])):'empty';
+  $('#harmName').textContent=HARM[hk][0];$('#harmText').textContent=HARM[hk][1];
+  $('#palChips').innerHTML=entries.filter(e=>e.n/painted>=.03).slice(0,6).map(e=>`<span><i style="background:${rgb2hex(e.rgb)}"></i>${hueName(e.rgb)} ${Math.round(e.n/painted*100)}%</span>`).join('');
+  // channels used, strongest first
+  const srcs=Object.entries(infl).filter(([,v])=>v.w>0).map(([k,v])=>({i:+k,w:v.w,rgb:v.lin.map(x=>fromLin(x/v.w))})).sort((a,b)=>b.w-a.w);
+  const W=srcs.reduce((t,x)=>t+x.w,0);
+  // identity = subtractive (paint) mix of everything on the canvas, pushed back to a usable brand shade
+  let outC;
+  if(hasPaint){const mix=geomixMany(entries.map(e=>({rgb:e.rgb,w:e.n})));const[h,sat]=hsl(mix);outC=hsl2rgb(h,Math.max(.5,Math.min(.75,sat)),.42);}
+  else outC=[158,162,170];
+  setIdentity(outC);
+  const A=srcs[0],B=srcs[1];
+  setVar('ea',A?rgb2hex(A.rgb):'#C9CBD0');setVar('eb',B?rgb2hex(B.rgb):'#C9CBD0');setVar('ec',rgb2hex(outC));
+  $('#eqA').textContent=A?hueName(A.rgb):'Channel';$('#eqB').textContent=B?hueName(B.rgb):(A?'Add another':'Channel');$('#eqC').textContent=hasPaint?hueName(outC):'You';
+  // copy check: no single channel and no single color above 60%
+  const v=$('#pverdict'),badge=$('#idBadge'),card=$('#idCard');
+  const topCh=A?A.w/W:0,topCol=hasPaint?entries[0].n/painted:0;
+  let cls='neutral',msg='Scroll the dial on the left, click a paint tile, then drag across Your Creative Palette.',tag='START PAINTING';
+  if(hasPaint&&A){
+    if(topCh>COPY_LIMIT){cls='bad';tag='COPYING · '+Math.round(topCh*100)+'%';
+      msg=`Copying: ${Math.round(topCh*100)}% of your channel comes from ${chLabel(A.i)} (${CHANNELS[A.i].name}). Keep any single channel under ${COPY_LIMIT*100}%.`;}
+    else if(topCol>COPY_LIMIT){cls='bad';tag='TOO MUCH '+hueName(entries[0].rgb).toUpperCase();
+      msg=`Too much of one color: ${Math.round(topCol*100)}% of your channel is ${hueName(entries[0].rgb).toLowerCase()}. Keep any single color under ${COPY_LIMIT*100}%.`;}
+    else{cls='good';tag='ORIGINAL BLEND';
+      msg='Original blend: '+srcs.map(x=>`${chLabel(x.i)} ${Math.round(x.w/W*100)}%`).join(' + ')+`. No single channel or color over ${COPY_LIMIT*100}%.`;}
+  }
+  v.className='verd '+cls;v.textContent=msg;badge.className='idbadge '+cls;badge.textContent=tag;card.classList.toggle('copy',cls==='bad');
+}
+// starting example (like the reference): blue + yellow side by side mix into a green identity
+function seed(){
+  const line=(pts,size)=>{brush.size=size;last=null;pts.forEach(q=>strokeTo(q[0],q[1]));};
+  const zig=(x0,x1,y0,y1,step,size)=>{const pts=[];let t=0;for(let y=y0;y<=y1+.1;y+=step){pts.push(t%2?[x1,y]:[x0,y]);pts.push(t%2?[x0,y+step/2]:[x1,y+step/2]);t++;}line(pts,size);};
+  const T=i=>REG[i+1],fillT=i=>{const[x,y,w,h]=T(i);zig(x-4,x+w+4,y+4,y+h,15,26);};
+  dip(0,1);zig(-5,215,4,70,16,28);
+  dip(1,0);zig(421,205,4,70,16,28);
+  dip(0,0);fillT(0);dip(1,1);fillT(1);dip(0,2);fillT(2);
+  dip(1,2);fillT(3);dip(0,4);fillT(4);dip(1,0);fillT(5);
+  brush.size=22;dip(0,1);
+}
+setVar('s',CHANNELS[0].main);
+seed();analyze();
+undoStack.length=0;
+
+/* =========================================================
+   MODE 3 — Be inspired. Be original.
+   ========================================================= */
+// 3 switches (each flips a pair of checklist lines) -> 2^3 = 8 thumbnails
+const PAIRS=[
+ {k:'look',same:['Same art style','Same color palette'],nu:['New art style: realism','Fresh palette and lighting'],file:['cartoon','realism']},
+ {k:'framing',same:['Same camera framing','Only superficial changes'],nu:['New camera framing','Original composition'],file:['upright','tilted']},
+ {k:'idea',same:['Same wording and hook','Same packaging idea'],nu:['Minimal text','Visually shows the idea'],file:['words','equation']}
+];
+const take={look:1,framing:1,idea:1};
+const PIN='M50 0C62 0 67 14 67 30C67 48 60 60 58 78C57 95 70 120 78 160C84 195 82 240 72 275C69 288 66 300 62 300L38 300C34 300 31 288 28 275C18 240 16 195 22 160C30 120 43 95 42 78C40 60 33 48 33 30C33 14 38 0 50 0Z';
+function thumb(c,p,squeeze){
+  let s=`<svg viewBox="0 0 490 256" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Thumbnail"><defs>
+   <clipPath id="${p}-cl"><path d="${PIN}"/></clipPath>
+   <linearGradient id="${p}-sky" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5ECBF8"/><stop offset="1" stop-color="#48B6F1"/></linearGradient>
+   <radialGradient id="${p}-glow" cx=".72" cy=".42" r=".5"><stop offset="0" stop-color="#9BE0FC"/><stop offset="1" stop-color="#9BE0FC" stop-opacity="0"/></radialGradient>
+   <radialGradient id="${p}-studio" cx=".5" cy=".45" r=".75"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#EDEDEE"/></radialGradient>
+   <linearGradient id="${p}-body" x1="0" x2="1"><stop offset="0" stop-color="#8E8A84"/><stop offset=".22" stop-color="#D9D5CF"/><stop offset=".45" stop-color="#F7F5F1"/><stop offset=".7" stop-color="#E2DED8"/><stop offset="1" stop-color="#7F7B75"/></linearGradient>
+   <linearGradient id="${p}-red" x1="0" x2="1"><stop offset="0" stop-color="#7A0E0A"/><stop offset=".45" stop-color="#EE3B30"/><stop offset="1" stop-color="#7A0E0A"/></linearGradient>
+   <filter id="${p}-bl" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="5"/></filter>
+   <filter id="${p}-grain"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="3"/><feColorMatrix values="0 0 0 0 .4  0 0 0 0 .38  0 0 0 0 .35  0 0 0 .22 0"/><feComposite in2="SourceGraphic" operator="in"/></filter>
+   <marker id="${p}-ar" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 1L9 5L0 9" fill="none" stroke="#2A2A2A" stroke-width="1.6"/></marker></defs>`;
+  s+=c.palette?`<rect width="490" height="256" fill="url(#${p}-studio)"/>`:`<rect width="490" height="256" fill="url(#${p}-sky)"/><rect width="490" height="256" fill="url(#${p}-glow)"/>`;
+  // text
+  if(!c.text){
+    const tr=squeeze?`transform="translate(56 0) scale(.82 1.08) translate(-56 -10)"`:'';
+    s+=`<g font-family="Archivo,'Arial Black',sans-serif" font-weight="900" font-size="${squeeze?74:70}" fill="#0B0B0C" ${tr} style="font-stretch:${squeeze?'78%':'100%'}"><text x="38" y="${squeeze?98:95}">WHY</text><text x="38" y="${squeeze?163:160}">PINS</text><text x="38" y="${squeeze?228:225}">FALL</text></g>`;
+  }
+  // pin placement
+  const cx=c.comp?(c.text?245:300):372, scale=.78, h=300*scale;
+  const floorY=240;
+  const pivotX=cx-50*scale+62*scale; // right edge of base
+  const rot=c.framing?35:0;
+  const pinTf=`translate(${cx-50*scale} ${floorY-h}) scale(${scale}) rotate(${rot} 62 300)`;
+  if(!c.style){s+=`<ellipse cx="${cx+(c.framing?28:0)}" cy="${floorY}" rx="${c.framing?90:62}" ry="7" fill="${c.palette?'rgba(0,0,0,.12)':'#2C9AE0'}"/>`;}
+  else{s+=`<ellipse cx="${cx+(c.framing?40:0)}" cy="${floorY+2}" rx="${c.framing?110:60}" ry="8" fill="rgba(0,0,0,.28)" filter="url(#${p}-bl)"/>`;}
+  if(!c.style){
+    s+=`<g transform="${pinTf}"><path d="${PIN}" fill="#FFFFFF"/><g clip-path="url(#${p}-cl)"><rect x="56" y="0" width="50" height="300" fill="#000" opacity=".06"/><rect y="82" width="100" height="10" fill="#E3261E"/><rect y="100" width="100" height="10" fill="#E3261E"/></g></g>`;
+  }else{
+    s+=`<g transform="${pinTf}"><path d="${PIN}" fill="url(#${p}-body)"/><g clip-path="url(#${p}-cl)"><rect y="82" width="100" height="10" fill="url(#${p}-red)"/><rect y="100" width="100" height="10" fill="url(#${p}-red)"/>
+      <rect width="100" height="300" filter="url(#${p}-grain)"/><ellipse cx="40" cy="175" rx="4" ry="52" fill="#fff" opacity=".55"/><path d="M62 190l5 8M30 228l4-6M60 250l6 3M34 150l-3 7" stroke="#6b6660" stroke-width="1.4" opacity=".45"/></g></g>`;
+  }
+  // idea annotations
+  if(c.idea){
+    s+=`<text x="${c.text?40:32}" y="${c.text?248:118}" font-family="Georgia,'Times New Roman',serif" font-style="italic" font-size="${c.text?20:30}" fill="#1E1E1E">τ = mgd</text>`;
+    s+=`<path d="M${pivotX} ${floorY}V${floorY-120}" stroke="#2A2A2A" stroke-width="1.6" stroke-dasharray="5 4"/>`;
+    if(c.framing){
+      const R=62,a=35*Math.PI/180;
+      s+=`<path d="M${pivotX} ${floorY-R}A${R} ${R} 0 0 1 ${pivotX+R*Math.sin(a)} ${floorY-R*Math.cos(a)}" fill="none" stroke="#2A2A2A" stroke-width="1.6"/>`;
+      // arrow near top of pin
+      const hx=pivotX+Math.sin(a)*h*.95,hy=floorY-Math.cos(a)*h*.95;
+      s+=`<path d="M${hx+10} ${hy-14}Q${hx+46} ${hy-4} ${hx+44} ${hy+34}" fill="none" stroke="#2A2A2A" stroke-width="1.8" marker-end="url(#${p}-ar)"/>`;
+      s+=`<text x="${pivotX+44}" y="${floorY-40}" font-family="Georgia,'Times New Roman',serif" font-style="italic" font-size="26" fill="#1E1E1E">θ = 18°</text>`;
+    }
+  }
+  return s+'</svg>';
+}
+const ICON_X='<svg viewBox="0 0 22 22"><path d="M5 5l12 12M17 5L5 17" stroke="#E3261E" stroke-width="3.4" stroke-linecap="round"/></svg>';
+const ICON_OK='<svg viewBox="0 0 22 22"><path d="M4 11.5l4.5 4.5L18 6" fill="none" stroke="#22A447" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const ICON_XW='<svg viewBox="0 0 22 22"><path d="M6 6l10 10M16 6L6 16" stroke="#fff" stroke-width="3.4" stroke-linecap="round"/></svg>';
+const ICON_OKW='<svg viewBox="0 0 22 22"><path d="M5 11.5l4 4L17.5 7" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const PAIR_NAMES={look:'LOOK · ART STYLE + PALETTE',framing:'FRAMING · CAMERA + COMPOSITION',idea:'IDEA · WORDING + HOOK'};
+const toC=t=>({style:t.look,palette:t.look,framing:t.framing,comp:t.framing,text:t.idea,idea:t.idea});
+const takeFile=t=>'unique-take-'+PAIRS.map(p=>p.file[t[p.k]]).join('-');
+const imgCache={};let takeTok=0;
+function loadImg(base,cb){ // tries thumbs3/<base>.png|jpg|webp, cb(src|null)
+  if(base in imgCache){cb(imgCache[base]);return;}
+  const ex=['png','jpg','webp','jpeg'];let i=0;
+  const next=()=>{if(i>=ex.length){imgCache[base]=null;cb(null);return;}const src='thumbs3/'+base+'.'+ex[i++],im=new Image();im.onload=()=>{imgCache[base]=src;cb(src);};im.onerror=next;im.src=src;};
+  next();
+}
+let front=0,lastBase='';
+function showTakeImg(src){
+  const box=$('#takeThumb');let L=box.querySelectorAll('.lay');
+  if(L.length!==2){box.innerHTML='<img class="lay on" alt="Your unique take thumbnail"><img class="lay" alt="Your unique take thumbnail">';L=box.querySelectorAll('.lay');front=0;L[0].src=src;return;}
+  const cur=L[front],nxt=L[1-front];if(cur.getAttribute('src')===src)return;
+  nxt.onload=()=>{nxt.classList.add('top','on');cur.classList.remove('top');setTimeout(()=>{if(nxt.classList.contains('on'))cur.classList.remove('on');},400);front=1-front;};
+  nxt.classList.remove('on','top');nxt.src=src;
+}
+function buildPairs(){
+  $('#pairs').innerHTML=PAIRS.map(p=>`<button type="button" class="pair" data-k="${p.k}" aria-pressed="false"><span class="pi"></span><span class="pt"><small>${PAIR_NAMES[p.k]}</small><b></b></span><span class="tsw" aria-hidden="true"><i></i></span></button>`).join('');
+}
+function renderTake(changedKey){
+  const n=PAIRS.filter(p=>take[p.k]).length,tok=++takeTok,base=takeFile(take);
+  if(base!==lastBase){lastBase=base;
+    loadImg(base,src=>{if(tok!==takeTok)return;if(src)showTakeImg(src);else{$('#takeThumb').innerHTML=thumb(toC(take),'yt',n===0);}});}
+  PAIRS.forEach(p=>{const b=$(`#pairs [data-k="${p.k}"]`),on=!!take[p.k],L=on?p.nu:p.same;
+    b.setAttribute('aria-pressed',String(on));
+    b.setAttribute('aria-label',PAIR_NAMES[p.k]+': '+(on?'changed':'same as reference')+'. Click to flip.');
+    const pi=b.querySelector('.pi');pi.innerHTML=on?ICON_OKW:ICON_XW;
+    b.querySelector('b').innerHTML=esc(L[0])+'<em>·</em>'+esc(L[1]);
+    if(changedKey===p.k){pi.classList.remove('pop');void pi.offsetWidth;pi.classList.add('pop');}});
+  const col=n===0?'#C8231B':n<3?'#B7791F':'#1B8A3C';
+  const lbl=$('#takeLbl'),ver=$('#takeVerdict');
+  const lt=n===0?'TOO SIMILAR':n<3?'GETTING THERE':'YOUR UNIQUE TAKE',vt=n===0?'This is copying.':n<3?'Still too close. Keep changing things.':'A distinct visual identity.';
+  if(lbl.textContent!==lt){lbl.textContent=lt;if(changedKey)animate(lbl);}
+  if(ver.textContent!==vt){ver.textContent=vt;if(changedKey)animate(ver);}
+  lbl.style.color=col;ver.style.color=col;
+  const segs=$('#takeMeter').querySelectorAll('i');segs.forEach((g,i)=>g.style.background=i<n?col:'#E6E6E8');
+  $('#takeMeter span').textContent=n+' of 3 changed';
+}
+$('#pairs').addEventListener('click',e=>{const b=e.target.closest('.pair');if(!b)return;const k=b.dataset.k;take[k]=take[k]?0:1;renderTake(k);});
+loadImg('reference',src=>{$('#refThumb').innerHTML=src?`<img src="${src}" alt="Reference thumbnail: Why Pins Fall" style="display:block;width:100%;height:100%;object-fit:cover">`:thumb(toC({look:0,framing:0,idea:0}),'rf',false);});
+buildPairs();renderTake();
+// preload all 8 so every flip is instant
+[0,1].forEach(a=>[0,1].forEach(b=>[0,1].forEach(c=>loadImg(takeFile({look:a,framing:b,idea:c}),()=>{}))));
+
+/* ---------- boot ---------- */
+const hash=(location.hash||'').slice(1);
+setMode(hash==='mix'?2:hash==='thumbnails'?3:1);
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>{fitLine($('#topLine'),72,1600);fitLine($('#remixLine'),58,1560);drawConnectors();});
+})();
+</script>
+</body>
+</html>
