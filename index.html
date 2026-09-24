@@ -80,6 +80,16 @@ button.tchip:hover{transform:translateY(-2px)}
 .remix:hover .tchip{filter:brightness(.97)}
 .m1-cap{top:875px;left:0;width:1672px;text-align:center;font:400 24px/1 var(--inter);color:#555;letter-spacing:.01em}
 .pulse{animation:pulse .9s ease}
+.sthumb-lbl{font:500 15px/1 var(--inter);letter-spacing:.22em;color:#555;text-align:center}
+.sthumb-lbl span{letter-spacing:.04em;color:#9A9A9A;text-transform:none}
+.sthumb{margin:0;border-radius:14px;overflow:hidden;background:#F3F3F4;box-shadow:0 12px 30px rgba(0,0,0,.15),0 1px 3px rgba(0,0,0,.06)}
+.sthumb img{display:block;width:100%;height:100%;object-fit:cover;transition:opacity .22s ease,transform .35s cubic-bezier(.2,.8,.2,1)}
+.sthumb img.out{opacity:0;transform:scale(.97)}
+.sthumb-meta{display:grid;grid-template-columns:40px 1fr;gap:12px;align-items:start}
+.sthumb-meta .av{width:40px;height:40px;border-radius:50%;background:#22A447;display:grid;place-items:center;color:#fff}
+.sthumb-meta .av svg{width:22px;height:22px}
+.sthumb-meta b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font:700 19px/1.3 var(--inter);color:#111}
+.sthumb-meta small{display:block;margin-top:4px;font:400 15px/1.2 var(--inter);color:#777}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(30,111,224,.45)}100%{box-shadow:0 0 0 18px rgba(30,111,224,0)}}
 
 /* brief (output) under mode 1 */
@@ -276,6 +286,9 @@ button.tchip:hover{transform:translateY(-2px)}
         <button type="button" class="chev down" data-dir="1" aria-label="Scroll endings down"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 9l7 7 7-7"/></svg></button>
       </div>
 
+      <div class="abs sthumb-lbl" style="left:516px;top:282px;width:360px">THUMBNAIL <span>· updates live</span></div>
+      <figure class="abs sthumb" id="s-thumbwrap" style="left:516px;top:308px;width:360px;height:203px"><img id="s-img" alt=""><span class="yt-time" id="s-time"></span></figure>
+      <div class="abs sthumb-meta" style="left:516px;top:528px;width:360px"><span class="av"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="8.5" r="4.4"/><path d="M3.5 21.5c.9-4.6 4.4-7 8.5-7s7.6 2.4 8.5 7z"/></svg></span><div><b id="s-title"></b><small id="s-sub"></small></div></div>
       <div class="abs m1-rule" style="left:58px;width:590px"></div>
       <div class="abs m1-rule" style="left:1110px;width:506px"></div>
       <div class="abs m1-label">REMIXED EXAMPLE</div>
@@ -545,7 +558,13 @@ function newRemix(){
   const as=ANGLES.filter(a=>a.id!==st.a),ss=SUBJECTS.filter(s=>s.id!==st.s);
   remix={a:pick(as).id,s:pick(ss).id,e:pick(ENDINGS.filter(e=>e.id!==st.e)).id};renderRemix();rerollAnim();
 }
-let rendered=false;
+let rendered=false,rendered2=false;
+function setStageImg(src,alt){
+  const img=$('#s-img');if(!src||img.getAttribute('src')===src)return;
+  if(!img.getAttribute('src')){img.src=src;img.alt=alt;return;}
+  img.classList.add('out');
+  setTimeout(()=>{img.onload=()=>img.classList.remove('out');img.src=src;img.alt=alt;if(img.complete)img.classList.remove('out');},170);
+}
 function renderBrief(){
   const A=getA(st.a),S=getS(st.s),E=getE(st.e);
   const fact=(S.facts&&S.facts[A.id])||fill(`Every {s} hides one ${A.label.toLowerCase()} detail most people have never noticed. Find it, and that detail becomes your whole video.`,A,S);
@@ -554,6 +573,7 @@ function renderBrief(){
   for(const k in b){const el=document.getElementById(k);if(el.textContent!==b[k]){el.textContent=b[k];if(rendered){el.classList.remove('fresh');void el.offsetWidth;el.classList.add('fresh');}}}
   rendered=true;
   $('#b-time').textContent=E.time;
+  setText($('#s-time'),E.time,rendered2);$('#s-title').textContent=titleOf(st);$('#s-sub').textContent='Your Channel · '+E.run;rendered2=true;
   loadThumb(A,S);
   const sw=[],parts=new Set();
   if(st.a!==ORIGINAL.a){sw.push(['Physics',A.label]);['question','audience','look','all 3 beats','thumbnail'].forEach(p=>parts.add(p));}
@@ -614,6 +634,7 @@ function loadThumb(A,S){
   const key=slug(A.label)+'-'+slug(S.label),img=$('#b-img'),empty=$('#b-empty'),wrap=$('#b-thumbwrap'),tok=++thumbTok;
   const changed=lastThumbKey&&key!==lastThumbKey;lastThumbKey=key;
   const show=src=>{if(tok!==thumbTok)return;
+    setStageImg(src,A.label+' hidden inside '+article(S.label)+' '+S.label+' thumbnail');
     if(src&&changed&&!img.hidden&&img.getAttribute('src')!==src){
       img.classList.add('out');
       setTimeout(()=>{if(tok!==thumbTok)return;img.onload=()=>img.classList.remove('out');img.src=src;if(img.complete)img.classList.remove('out');},180);
