@@ -91,7 +91,7 @@ button.tchip:hover{transform:translateY(-2px)}
 .lib-bar select{flex:0 0 auto;cursor:pointer}
 .lib-bar input:focus,.lib-bar select:focus{outline:3px solid var(--blue-bg);border-color:var(--blue)}
 .lib-count{font:600 14px var(--inter);color:#666;font-variant-numeric:tabular-nums;margin-left:auto}
-.lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr));gap:26px 20px}
+.lib-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:26px 20px}
 .vcard{display:grid;gap:10px;align-content:start;animation:enter .35s ease both}
 .vthumb{position:relative;display:block;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:#EFEFF1;box-shadow:0 6px 18px rgba(0,0,0,.10);transition:transform .2s ease,box-shadow .2s ease}
 .vthumb:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(0,0,0,.16)}
@@ -102,8 +102,8 @@ button.tchip:hover{transform:translateY(-2px)}
 .vplay b{display:inline-flex;align-items:center;gap:8px;background:#E3261E;padding:9px 16px;border-radius:999px}
 .vtitle{margin:0;font:700 16.5px/1.35 var(--inter);color:#111;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .vmeta{margin:-4px 0 0;font:400 14px var(--inter);color:#6B6B6B}
-.vact{display:flex;flex-wrap:wrap;gap:6px}
-.vbtn{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border:1px solid #DCDCDF;border-radius:999px;background:#fff;color:#222;font:600 13px var(--inter);text-decoration:none;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
+.vact{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.vbtn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 8px;white-space:nowrap;border:1px solid #DCDCDF;border-radius:999px;background:#fff;color:#222;font:600 13px var(--inter);text-decoration:none;cursor:pointer;transition:background .15s,border-color .15s,color .15s}
 .vbtn:hover{border-color:#999;background:#F6F6F7}
 .vbtn svg{width:15px;height:15px}
 .vbtn.done{background:#E3F5E8;border-color:#B6E0C3;color:#12692C}
@@ -1077,7 +1077,7 @@ const ICO_GO='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-
 const libGrid=$('#libGrid');
 libGrid.innerHTML=VIRAL.map(([id,title,ch,views,len],i)=>{const url='https://www.youtube.com/watch?v='+id;
   return `<article class="vcard" data-i="${i}">
-  <a class="vthumb" href="${url}" target="_blank" rel="noopener" aria-label="Watch ${esc(title)} on YouTube"><img loading="lazy" decoding="async" src="viral/${id}.jpg" alt="Thumbnail: ${esc(title)}" width="1280" height="720">${len?`<span class="vlen">${len}</span>`:''}<span class="vplay"><b>▶ Watch on YouTube</b></span></a>
+  <a class="vthumb" href="${url}" target="_blank" rel="noopener" aria-label="Watch ${esc(title)} on YouTube"><img loading="lazy" decoding="async" src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" onerror="this.onerror=null;this.src='viral/${id}.jpg'" alt="Thumbnail: ${esc(title)}" width="1280" height="720">${len?`<span class="vlen">${len}</span>`:''}<span class="vplay"><b>▶ Watch on YouTube</b></span></a>
   <h3 class="vtitle" title="${esc(title)}">${esc(title)}</h3>
   <p class="vmeta">${esc(ch)}${views?' · '+esc(views)+' views':''}</p>
   <div class="vact"><a class="vbtn" href="viral/${id}.jpg" download="${fileSlug(title)}.jpg">${ICO_DL}Thumbnail</a><button type="button" class="vbtn" data-copy="${i}">${ICO_CP}Copy title</button><a class="vbtn" href="${url}" target="_blank" rel="noopener">${ICO_GO}Watch</a></div>
